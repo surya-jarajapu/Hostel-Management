@@ -30,7 +30,6 @@ export default function AdminUsersPage() {
 
   const [_collectReceipt, _setCollectReceipt] = useState<File | null>(null);
 
-
   const [users, setUsers] = useState<User[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -170,36 +169,34 @@ export default function AdminUsersPage() {
   // FETCH USERS
   // =========================
 
+  const fetchUsers = useCallback(
+    async (pageIndex = 0) => {
+      if (!token) return;
 
-const fetchUsers = useCallback(
-  async (pageIndex = 0) => {
-    if (!token) return;
+      setLoading(true);
 
-    setLoading(true);
+      const res = await fetch("http://localhost:3000/user/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          paging: "No",
+          search: search.trim(),
+          page_index: pageIndex,
+          page_count: 10,
+          date_format_id: "1111-1111-1111-1111",
+          time_zone_id: "2222-2222-2222-2222",
+        }),
+      });
 
-    const res = await fetch("http://localhost:3000/user/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        paging: "No",
-        search: search.trim(),
-        page_index: pageIndex,
-        page_count: 10,
-        date_format_id: "1111-1111-1111-1111",
-        time_zone_id: "2222-2222-2222-2222",
-      }),
-    });
-
-    const json = await res.json();
-    setUsers(json.status ? json.data : []);
-    setLoading(false);
-  },
-  [token, search]
-);
-
+      const json = await res.json();
+      setUsers(json.status ? json.data : []);
+      setLoading(false);
+    },
+    [token, search]
+  );
 
   // =========================
   // FETCH AVAILABLE ROOMS
@@ -580,7 +577,9 @@ const fetchUsers = useCallback(
                       <Image
                         alt="Receipt image"
                         src={u.user_fee_receipt}
-                        className="h-9 w-9 object-cover rounded cursor-pointer border"
+                        width={36}
+                        height={36}
+                        className="object-cover rounded cursor-pointer border"
                         onClick={() =>
                           setReceiptPreview(u.user_fee_receipt ?? null)
                         }
@@ -684,7 +683,9 @@ const fetchUsers = useCallback(
                 <Image
                   alt="Receipt image"
                   src={u.user_fee_receipt}
-                  className="mt-1 h-10 w-10 rounded border object-cover"
+                  width={38}
+                  height={38}
+                  className="mt-1 rounded border object-cover"
                   onClick={() => setReceiptPreview(u.user_fee_receipt ?? null)}
                 />
               ) : (
@@ -856,6 +857,8 @@ const fetchUsers = useCallback(
                   <Image
                     alt="Receipt image"
                     src={form.user_fee_receipt_preview}
+                    width={36}
+                    height={40}
                     className="w-full h-24 object-contain rounded-lg"
                   />
                   <button
@@ -1009,7 +1012,8 @@ const fetchUsers = useCallback(
                   <Image
                     alt="Receipt image"
                     src={collectPreview}
-                    className="w-full h-24 object-contain rounded-lg"
+                    height={36}
+                    className="w-full  object-contain rounded-lg"
                   />
                   <button
                     onClick={() => {

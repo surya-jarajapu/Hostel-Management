@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import {
   Users,
   BedDouble,
@@ -12,6 +12,30 @@ import {
 
 /* ================= TYPES ================= */
 
+/** Room reference used inside user rows */
+type RoomRef = {
+  room_number: string;
+  floor_number: string;
+};
+
+/** Users shown in PARTIAL / OVERDUE / PENDING */
+type UserRow = {
+  user_id: string;
+  user_name: string;
+  mobile: string;
+  due_amount: number;
+  delay_days: number;
+  room?: RoomRef;
+};
+
+/** Rows shown in BEDS modal */
+type BedRow = {
+  room_id: string;
+  room_number: string;
+  available_beds: number;
+};
+
+/** Dashboard counters */
 type DashboardStats = {
   total_users: number;
   partial_users: number;
@@ -119,39 +143,9 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      {/* Modals */}
-      {modalType === "PARTIAL" && (
+      {modalType && (
         <DashboardModal
-          type="PARTIAL"
-          title="Partial Payment Users"
-          endpoint="/admin/dashboard/partial-users"
-          onClose={() => setModalType(null)}
-        />
-      )}
-
-      {modalType === "OVERDUE" && (
-        <DashboardModal
-          type="OVERDUE"
-          title="Overdue Users"
-          endpoint="/admin/dashboard/overdue-users"
-          onClose={() => setModalType(null)}
-        />
-      )}
-
-      {modalType === "BEDS" && (
-        <DashboardModal
-          type="BEDS"
-          title="Available Beds"
-          endpoint="/admin/dashboard/available-beds"
-          onClose={() => setModalType(null)}
-        />
-      )}
-
-      {modalType === "PENDING" && (
-        <PendingApprovalModal
-          type="PENDING"
-          title="pEMDING LIST"
-          endpoint="/admin/dashboard/pending-collections"
+          type={modalType}
           onClose={() => setModalType(null)}
         />
       )}
@@ -161,233 +155,121 @@ export default function AdminDashboardPage() {
 
 /* ================= STAT CARD ================= */
 
-function StatCard({ title, value, icon, gradient, onClick }: any) {
+type StatCardProps = {
+  title: string;
+  value: string | number;
+  icon: ReactNode;
+  gradient: string;
+  onClick?: () => void;
+};
+
+function StatCard({
+  title,
+  value,
+  icon,
+  gradient,
+  onClick,
+}: StatCardProps) {
   return (
     <div
       onClick={onClick}
       className={`
         rounded-3xl text-white
         bg-gradient-to-br ${gradient}
-        backdrop-blur-xl
         border border-white/30
         shadow-[0_20px_45px_rgba(0,0,0,0.35)]
-        p-4 sm:p-6
+        p-5
         ${onClick ? "cursor-pointer hover:scale-[1.03] transition" : ""}
       `}
     >
-      <div className="flex justify-between items-center mb-3 sm:mb-4">
+      <div className="flex justify-between items-center mb-4">
         <span className="text-sm text-white/80">{title}</span>
-        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/25 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-white/25 flex items-center justify-center">
           {icon}
         </div>
       </div>
 
-      <div className="text-2xl sm:text-3xl font-semibold">{value}</div>
+      <div className="text-3xl font-semibold">{value}</div>
     </div>
   );
 }
 
 /* ================= MODAL ================= */
 
-function PendingApprovalModal({ onClose }: { onClose: () => void }) {
-  const [rows, setRows] = useState<any[]>([]);
-  const token = localStorage.getItem("token");
-
-  const fetchData = () => {
-    fetch("http://localhost:3000/admin/dashboard/pending-collections", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((j) => setRows(Array.isArray(j) ? j : j.data ?? []));
-  };
-
-  useEffect(fetchData, []);
-
-  const approve = async (user_id: string) => {
-    await fetch(
-      `http://localhost:3000/admin/dashboard/users/${user_id}/approve-fee`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-    fetchData(); // refresh list
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4">
-      <div className="w-full max-w-4xl rounded-3xl bg-white/20 backdrop-blur-2xl border border-white/30 text-white overflow-hidden">
-        {/* Header */}
-        <div className="p-5 flex justify-between border-b border-white/20">
-          <h3 className="font-semibold text-lg">Pending Payment Approvals</h3>
-          <button onClick={onClose}>✕</button>
-        </div>
-
-        {/* Desktop Table */}
-        <div className="hidden md:block p-5">
-          <table className="w-full text-sm">
-            <thead className="text-white/70 border-b border-white/20">
-              <tr>
-                <th className="p-2 text-left">Name</th>
-                <th className="p-2 text-left">Room</th>
-                <th className="p-2 text-left">Floor</th>
-                <th className="p-2 text-left">Due</th>
-                <th className="p-2 text-left">Delay</th>
-                <th className="p-2 text-left">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.user_id} className="border-b border-white/10">
-                  <td className="p-2 font-medium">{r.user_name}</td>
-                  <td className="p-2">{r.room?.room_number}</td>
-                  <td className="p-2">{r.room?.floor_number}</td>
-                  <td className="p-2 text-yellow-200">₹ {r.due_amount}</td>
-                  <td className="p-2 text-red-300">{r.delay_days} days</td>
-                  <td className="p-2">
-                    <button
-                      onClick={() => approve(r.user_id)}
-                      className="px-3 py-1 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs"
-                    >
-                      Approve
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="md:hidden p-4 space-y-3">
-          {rows.map((r) => (
-            <div
-              key={r.user_id}
-              className="rounded-2xl bg-white/20 border border-white/30 p-4"
-            >
-              <div className="font-medium text-lg">{r.user_name}</div>
-
-              <div className="text-sm text-white/70">
-                Room {r.room?.room_number} · Floor {r.room?.floor_number}
-              </div>
-
-              <div className="text-sm text-yellow-200 mt-1">
-                Due: ₹ {r.due_amount}
-              </div>
-
-              <div className="text-sm text-red-300">
-                Delay: {r.delay_days} days
-              </div>
-
-              <button
-                onClick={() => approve(r.user_id)}
-                className="mt-3 w-full rounded-xl bg-green-500 py-2 text-sm font-medium"
-              >
-                Approve Payment
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function DashboardModal({
-  title,
-  endpoint,
-  onClose,
   type,
+  onClose,
 }: {
-  title: string;
-  endpoint: string;
-  onClose: () => void;
   type: ModalType;
+  onClose: () => void;
 }) {
-  const [rows, setRows] = useState<any[]>([]);
-  const isBeds = type === "BEDS";
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [beds, setBeds] = useState<BedRow[]>([]);
 
   useEffect(() => {
+    const endpoint =
+      type === "BEDS"
+        ? "/admin/dashboard/available-beds"
+        : type === "OVERDUE"
+        ? "/admin/dashboard/overdue-users"
+        : type === "PARTIAL"
+        ? "/admin/dashboard/partial-users"
+        : "/admin/dashboard/pending-collections";
+
     fetch(`http://localhost:3000${endpoint}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
     })
       .then((res) => res.json())
-      .then((json) => setRows(json.data ?? []));
-  }, [endpoint]);
+      .then((json) => {
+        if (type === "BEDS") {
+          setBeds(json.data ?? []);
+        } else {
+          setUsers(json.data ?? []);
+        }
+      });
+  }, [type]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4">
-      <div className="w-full max-w-3xl rounded-3xl bg-white/20 backdrop-blur-2xl border border-white/30 text-white overflow-hidden">
-        {/* Header */}
+      <div className="w-full max-w-3xl rounded-3xl bg-white/20 border border-white/30 text-white overflow-hidden">
         <div className="p-5 flex justify-between border-b border-white/20">
-          <h3 className="font-semibold text-lg">{title}</h3>
+          <h3 className="font-semibold text-lg">{type} LIST</h3>
           <button onClick={onClose}>✕</button>
         </div>
 
-        {/* Desktop table */}
-        <div className="hidden md:block p-5">
-          <table className="w-full text-sm">
-            <tbody>
-              {rows.map((r: any, i: number) => (
-                <tr key={i} className="border-b border-white/10">
-                  {isBeds ? (
-                    <>
-                      <td className="p-2">{r.room_number}</td>
-                      <td className="p-2">{r.available_beds}</td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="p-2">{r.user_name}</td>
-                      <td className="p-2">
-                        {r.room?.room_number} – {r.room?.floor_number}
-                      </td>
-                      <td className="p-2">{r.mobile}</td>
-                      {type === "OVERDUE" && (
-                        <td className="p-2">{r.delay_days} days</td>
-                      )}
-                    </>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile cards */}
-        <div className="md:hidden p-4 space-y-3">
-          {rows.map((r: any, i: number) => (
-            <div
-              key={i}
-              className="rounded-2xl bg-white/20 border border-white/30 p-4"
-            >
-              {isBeds ? (
-                <>
-                  <div className="font-medium">Room {r.room_number}</div>
+        <div className="p-5 space-y-3">
+          {type === "BEDS"
+            ? beds.map((r) => (
+                <div
+                  key={r.room_id}
+                  className="rounded-xl bg-white/20 p-3"
+                >
+                  Room {r.room_number} — Available beds:{" "}
+                  {r.available_beds}
+                </div>
+              ))
+            : users.map((u) => (
+                <div
+                  key={u.user_id}
+                  className="rounded-xl bg-white/20 p-3"
+                >
+                  <div className="font-medium">{u.user_name}</div>
                   <div className="text-sm text-white/70">
-                    Available beds: {r.available_beds}
+                    Room {u.room?.room_number} · Floor{" "}
+                    {u.room?.floor_number}
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="font-medium">{r.user_name}</div>
-                  <div className="text-sm text-white/70">
-                    Room {r.room?.room_number} – Floor {r.room?.floor_number}
-                  </div>
-                  <div className="text-sm text-white/70">
-                    Mobile: {r.mobile}
+                  <div className="text-yellow-200">
+                    Due ₹ {u.due_amount}
                   </div>
                   {type === "OVERDUE" && (
-                    <div className="text-sm text-red-200 mt-1">
-                      Delay: {r.delay_days} days
+                    <div className="text-red-300">
+                      Delay: {u.delay_days} days
                     </div>
                   )}
-                </>
-              )}
-            </div>
-          ))}
+                </div>
+              ))}
         </div>
       </div>
     </div>

@@ -5,31 +5,58 @@ import {
   useContext,
   useEffect,
   useState,
+  ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
 
+/* ================= TYPES ================= */
+
+type Hostel = {
+  hostel_id: string;
+  name: string;
+};
+
+type User = {
+  user_id: string;
+  name: string;
+  email?: string;
+  mobile?: string;
+  role: "ADMIN" | "SUPERVISOR" | "USER";
+  hostel_id?: string;
+  hostel?: Hostel;
+};
+
 type AuthContextType = {
-  user: any;
+  user: User | null;
   loading: boolean;
-  login: (token: string, user: any) => void;
+  login: (token: string, user: User) => void;
   logout: () => void;
 };
 
+/* ================= CONTEXT ================= */
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+/* ================= PROVIDER ================= */
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // 🔁 Restore session on refresh
+  // 🔁 Restore session
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userStr = localStorage.getItem("user");
 
     if (token && userStr) {
-      setUser(JSON.parse(userStr));
+      try {
+        const parsedUser: User = JSON.parse(userStr);
+        setUser(parsedUser);
+      } catch {
+        setUser(null);
+      }
     } else {
       setUser(null);
     }
@@ -38,15 +65,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ✅ LOGIN
-  const login = (token: string, userData: any) => {
-    // Save to state
+  const login = (token: string, userData: User) => {
     setUser(userData);
-
-    // Save to storage
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
-
-    // 🔥 REQUIRED FOR MIDDLEWARE
     document.cookie = `token=${token}; path=/`;
   };
 
@@ -54,10 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.clear();
-
-    // 🔥 Remove cookie
     document.cookie = "token=; Max-Age=0; path=/";
-
     router.replace("/login");
   };
 
@@ -68,7 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
+/* ================= HOOK ================= */
+
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used inside AuthProvider");

@@ -16,16 +16,20 @@ api.interceptors.response.use(
 
 export default api;
 // lib/api.ts
-export async function apiRequest<T>(url: string, method: string = 'GET', body?: any): Promise<T> {
+export async function apiRequest<T>(
+  url: string,
+  method: string = "GET",
+  body?: unknown
+): Promise<T> {
   const res = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || 'API request failed');
+    throw new Error(data.message || "API request failed");
   }
 
   return data;

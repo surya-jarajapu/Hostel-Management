@@ -1,16 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
+type Room = {
+  room_id: string;
+  room_number: string;
+  floor_number: string;
+  available_beds: number;
+  total_beds: number;
+  status: string;
+};
+
 export default function AdminRoomsPage() {
-  const [rooms, setRooms] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingRoom, setEditingRoom] = useState<any | null>(null);
+
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setToken(localStorage.getItem("token"));
+  }, []);
 
   const [form, setForm] = useState({
     floor_number: "",
@@ -20,35 +36,35 @@ export default function AdminRoomsPage() {
   });
 
   // FETCH ROOMS
-  const token = () => localStorage.getItem("token");
 
-  const fetchRooms = async () => {
-    setLoading(true);
-    const token = localStorage.getItem("token");
+const fetchRooms = useCallback(async () => {
+  if (!token) return;
 
-    const res = await fetch("http://localhost:3000/room/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        paging: "No",
-        search: "",
-        date_format_id: "1111-1111-1111-1111",
-        time_zone_id: "2222-2222-2222-2222",
-      }),
-    });
+  setLoading(true);
 
-    const json = await res.json();
-    setRooms(json.data || []);
-    setLoading(false);
-  };
+  const res = await fetch("http://localhost:3000/room/search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      paging: "No",
+      search: "",
+      date_format_id: "1111-1111-1111-1111",
+      time_zone_id: "2222-2222-2222-2222",
+    }),
+  });
+
+  const json: { data: Room[] } = await res.json();
+  setRooms(json.data ?? []);
+  setLoading(false);
+}, [token]);
+
 
   useEffect(() => {
-    if (!token()) return;
     fetchRooms();
-  }, [token()]);
+  }, [fetchRooms]);
 
   // OPEN CREATE MODAL
   const openCreateModal = () => {
@@ -63,17 +79,17 @@ export default function AdminRoomsPage() {
   };
 
   // OPEN EDIT MODAL
-  const openEditModal = (r: any) => {
-    setEditingRoom(r);
-    setErrors({});
-    setForm({
-      floor_number: r.floor_number,
-      room_number: r.room_number,
-      total_beds: r.total_beds,
-      status: r.status,
-    });
-    setModalOpen(true);
-  };
+const openEditModal = (r: Room) => {
+  setEditingRoom(r);
+  setForm({
+    floor_number: r.floor_number,
+    room_number: r.room_number,
+    total_beds: r.total_beds,
+    status: r.status,
+  });
+  setModalOpen(true);
+};
+
 
   // CREATE / UPDATE ROOM
   const saveRoom = async () => {
@@ -109,7 +125,7 @@ export default function AdminRoomsPage() {
   const deleteRoom = async (id: string) => {
     if (!confirm("Delete room?")) return;
 
-    const token = localStorage.getItem("token");
+    if (!token) return;
 
     const res = await fetch(`http://localhost:3000/room/${id}`, {
       method: "DELETE",

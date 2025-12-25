@@ -1,54 +1,72 @@
 "use client";
 
 import { useAuth } from "@/app/context/AuthContext";
-import { supabase } from "@/app/lib/supabaseClient";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import Image from "next/image";
 
-export default function AdminUsersPage({
-  onSearch,
-}: {
-  onSearch?: (value: string) => void;
-}) {
+export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
-  const [users, setUsers] = useState<any[]>([]);
-  const [rooms, setRooms] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<any | null>(null);
 
   const [collectOpen, setCollectOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const [paymentType, setPaymentType] = useState<"FULL" | "PARTIAL">("FULL");
   const [amount, setAmount] = useState<number>(0);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteUserData, setDeleteUserData] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
   // 🔹 Collect Fee receipt states
-  const [collectReceipt, setCollectReceipt] = useState<File | null>(null);
   const [collectPreview, setCollectPreview] = useState<string>("");
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const [_collectReceipt, _setCollectReceipt] = useState<File | null>(null);
+
+
+  const [users, setUsers] = useState<User[]>([]);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [deleteUserData, setDeleteUserData] = useState<User | null>(null);
+
   const { user } = useAuth();
-  const hostelId = user?.hostel_id;
+  // const hostelId = user?.hostel_id;
 
-  useEffect(() => {
-    const t = localStorage.getItem("token");
-    setToken(t);
-  }, []);
+  type Room = {
+    room_id: string;
+    room_number: string;
+    floor_number: number;
+    available_beds: number;
+  };
 
-  useEffect(() => {
-    if (token) {
-      fetchUsers();
-    }
-  }, [token]);
+  type User = {
+    user_id: string;
+    user_name: string;
+    email?: string;
+    mobile?: string;
+    joining_date: string;
+    monthly_fee: number;
+    due_amount: number;
+    delay_days: number;
+    next_fee_date?: string;
+    status: string;
+    user_fee_receipt?: string;
+    room?: Room;
+  };
+
+  type BackendResponse<T> = {
+    status: boolean;
+    message?: string;
+    data: T;
+    errors?: { field: string; message: string }[];
+  };
 
   type UserForm = {
     user_name: string;
@@ -64,6 +82,17 @@ export default function AdminUsersPage({
     user_fee_receipt_file: File | null;
     user_fee_receipt_preview: string;
   };
+
+  useEffect(() => {
+    const t = localStorage.getItem("token");
+    setToken(t);
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      fetchUsers();
+    }
+  }, [token]);
 
   const [form, setForm] = useState<UserForm>({
     user_name: "",
@@ -81,7 +110,7 @@ export default function AdminUsersPage({
   });
 
   const basicFields: Array<{
-    key: keyof UserForm;
+    key: "user_name" | "email" | "mobile" | "monthly_fee";
     label: string;
   }> = [
     { key: "user_name", label: "Name" },
@@ -141,42 +170,36 @@ export default function AdminUsersPage({
   // FETCH USERS
   // =========================
 
-  const fetchUsers = async (pageIndex = 0) => {
+
+const fetchUsers = useCallback(
+  async (pageIndex = 0) => {
     if (!token) return;
+
     setLoading(true);
+
     const res = await fetch("http://localhost:3000/user/search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         paging: "No",
-        search: search.trim(), // ✅ works now
+        search: search.trim(),
         page_index: pageIndex,
         page_count: 10,
-
-        // REQUIRED BY BACKEND
         date_format_id: "1111-1111-1111-1111",
         time_zone_id: "2222-2222-2222-2222",
-
-        ...(form.payment_type === "PARTIAL" && {
-          paid_amount: Number(form.paid_amount),
-        }),
       }),
     });
 
     const json = await res.json();
-
-    if (json.status === false) {
-      toast.error(json.message || "Data not found");
-      setUsers([]);
-    } else {
-      setUsers(json.data || []);
-    }
-
+    setUsers(json.status ? json.data : []);
     setLoading(false);
-  };
+  },
+  [token, search]
+);
+
 
   // =========================
   // FETCH AVAILABLE ROOMS
@@ -218,17 +241,21 @@ export default function AdminUsersPage({
 
   useEffect(() => {
     if (modalOpen) fetchRooms();
-  }, [modalOpen]);
+  }, [modalOpen, fetchRooms]);
+
+  useEffect(() => {
+    if (token) fetchUsers();
+  }, [token, fetchUsers]);
 
   useEffect(() => {
     if (!collectOpen && collectPreview) {
       URL.revokeObjectURL(collectPreview);
       setCollectPreview("");
-      setCollectReceipt(null);
+      _setCollectReceipt(null);
     }
   }, [collectOpen]);
 
-  const getFeeStatus = (u: any) => {
+  const getFeeStatus = (u: User): string => {
     if (u.due_amount === 0) return "🟢 Paid";
 
     const overdue = u.next_fee_date && new Date(u.next_fee_date) < new Date();
@@ -263,27 +290,29 @@ export default function AdminUsersPage({
     setModalOpen(true);
   };
 
-  const openEditModal = (u: any) => {
+  const openEditModal = (u: User) => {
     setEditingUser(u);
     setErrors({});
+
     setForm({
       user_name: u.user_name,
-      email: u.email,
-      mobile: u.mobile,
-      monthly_fee: u.monthly_fee,
+      email: u.email ?? "",
+      mobile: u.mobile ?? "",
+      monthly_fee: String(u.monthly_fee), // ✅ convert number → string
       joining_date: u.joining_date.split("T")[0],
       payment_type: "NONE",
-      room_id: u.room?.room_id || "",
+      room_id: u.room?.room_id ?? "",
       status: u.status,
       paid_amount: "",
-      user_fee_receipt: u.user_fee_receipt,
-      user_fee_receipt_file: u.user_fee_receipt,
-      user_fee_receipt_preview: u.user_fee_receipt || "",
+      user_fee_receipt: u.user_fee_receipt ?? "",
+      user_fee_receipt_file: null, // ✅ MUST be File | null
+      user_fee_receipt_preview: u.user_fee_receipt ?? "",
     });
+
     setModalOpen(true);
   };
 
-  const openCollectModal = (u: any) => {
+  const openCollectModal = (u: User) => {
     setSelectedUser(u);
     setPaymentType("FULL");
     setAmount(u.due_amount);
@@ -291,6 +320,12 @@ export default function AdminUsersPage({
   };
 
   const collectFee = async () => {
+    // 🔐 Guard: selectedUser CAN be null
+    if (!selectedUser) {
+      toast.error("No user selected");
+      return;
+    }
+
     if (amount <= 0 || amount > selectedUser.due_amount) {
       toast.error("Invalid amount");
       return;
@@ -352,8 +387,8 @@ export default function AdminUsersPage({
       }
 
       // 📦 2️⃣ Build payload (CLEAN)
-      const payload: any = {
-        user_name: form.user_name?.trim(),
+      const payload: Record<string, unknown> = {
+        user_name: form.user_name.trim(),
         monthly_fee: Number(form.monthly_fee),
         joining_date: form.joining_date,
         status: form.status,
@@ -395,7 +430,11 @@ export default function AdminUsersPage({
       if (!res.ok) {
         if (Array.isArray(data?.errors)) {
           const e: Record<string, string> = {};
-          data.errors.forEach((x: any) => (e[x.field] = x.message));
+
+          data.errors?.forEach((x: { field: string; message: string }) => {
+            e[x.field] = x.message;
+          });
+
           setErrors(e);
           toast.error("Fix validation errors");
         } else {
@@ -421,7 +460,7 @@ export default function AdminUsersPage({
   // =========================
   // DELETE USER
   // =========================
-  const openDeleteModal = (u: any) => {
+  const openDeleteModal = (u: User) => {
     setDeleteUserData(u);
     setDeleteOpen(true);
   };
@@ -453,235 +492,246 @@ export default function AdminUsersPage({
   // =========================
   // UI
   // =========================
-  const handleSearch = () => {
-    onSearch?.(search.trim());
-  };
   return (
-<div className="min-h-screen bg-gray-100 pt-[96px] px-4 sm:px-6 pb-32 text-gray-800">
+    <div className="min-h-screen bg-gray-100 pt-[96px] px-4 sm:px-6 pb-32 text-gray-800">
+      {/* HEADER */}
+      <div className="mb-6">
+        {/* TITLE */}
+        <h1 className="text-lg sm:text-3xl font-semibold text-gray-900">
+          Hostel Users
+        </h1>
 
-  {/* HEADER */}
- <div className="mb-6">
-  {/* TITLE */}
-  <h1 className="text-lg sm:text-3xl font-semibold text-gray-900">
-    Hostel Users
-  </h1>
-
-  {/* SEARCH */}
-  <div className="mt-4 flex gap-2">
-    <input
-      className="
+        {/* SEARCH */}
+        <div className="mt-4 flex gap-2">
+          <input
+            className="
         flex-1 rounded-xl
         bg-white/60 backdrop-blur
         border border-gray-200
         px-4 py-2.5 text-sm
         focus:outline-none focus:ring-2 focus:ring-blue-400
       "
-      placeholder="Search name / mobile / room"
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-    />
+            placeholder="Search name / mobile / room"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
-    <button
-      onClick={() => fetchUsers(0)}
-      className="
+          <button
+            onClick={() => fetchUsers(0)}
+            className="
         rounded-xl
         bg-gradient-to-br from-[#0a84ff] to-[#5ac8fa]
         text-white px-4 py-2.5 text-sm
         shadow
       "
-    >
-      Search
-    </button>
-  </div>
-</div>
+          >
+            Search
+          </button>
+        </div>
+      </div>
 
+      {/* ================= DESKTOP TABLE ================= */}
+      <div className="hidden md:block rounded-3xl bg-white/40 backdrop-blur-xl border border-white/30 shadow p-4">
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <table className="w-full text-left text-sm">
+            <thead className="text-gray-700 border-b">
+              <tr>
+                <th>Name</th>
+                <th>Room</th>
+                <th>Floor</th>
+                <th>Mobile</th>
+                <th>Joining</th>
+                <th>Next Fee</th>
+                <th>Status</th>
+                <th>Delay</th>
+                <th>Fee ₹</th>
+                <th>Due ₹</th>
+                <th>Receipt</th>
+                <th>Action</th>
+              </tr>
+            </thead>
 
-  {/* ================= DESKTOP TABLE ================= */}
-  <div className="hidden md:block rounded-3xl bg-white/40 backdrop-blur-xl border border-white/30 shadow p-4">
-    {loading ? (
-      <p>Loading...</p>
-    ) : (
-      <table className="w-full text-left text-sm">
-        <thead className="text-gray-700 border-b">
-          <tr>
-            <th>Name</th>
-            <th>Room</th>
-            <th>Floor</th>
-            <th>Mobile</th>
-            <th>Joining</th>
-            <th>Next Fee</th>
-            <th>Status</th>
-            <th>Delay</th>
-            <th>Fee ₹</th>
-            <th>Due ₹</th>
-            <th>Receipt</th>
-            <th>Action</th>
-          </tr>
-        </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.user_id} className="border-b last:border-0">
+                  <td>{u.user_name}</td>
+                  <td>{u.room?.room_number || "-"}</td>
+                  <td>{u.room?.floor_number || "-"}</td>
+                  <td>{u.mobile || "-"}</td>
+                  <td>
+                    {u.joining_date
+                      ? new Date(u.joining_date).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td>
+                    {u.next_fee_date
+                      ? new Date(u.next_fee_date).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td>{getFeeStatus(u)}</td>
+                  <td>{u.delay_days > 0 ? `${u.delay_days} days` : "-"}</td>
+                  <td>₹{u.monthly_fee}</td>
+                  <td>₹{u.due_amount}</td>
 
-        <tbody>
-          {users.map((u) => (
-            <tr key={u.user_id} className="border-b last:border-0">
-              <td>{u.user_name}</td>
-              <td>{u.room?.room_number || "-"}</td>
-              <td>{u.room?.floor_number || "-"}</td>
-              <td>{u.mobile || "-"}</td>
-              <td>{u.joining_date ? new Date(u.joining_date).toLocaleDateString() : "-"}</td>
-              <td>{u.next_fee_date ? new Date(u.next_fee_date).toLocaleDateString() : "-"}</td>
-              <td>{getFeeStatus(u)}</td>
-              <td>{u.delay_days > 0 ? `${u.delay_days} days` : "-"}</td>
-              <td>₹{u.monthly_fee}</td>
-              <td>₹{u.due_amount}</td>
+                  <td className="text-center">
+                    {u.user_fee_receipt ? (
+                      <Image
+                        alt="Receipt image"
+                        src={u.user_fee_receipt}
+                        className="h-9 w-9 object-cover rounded cursor-pointer border"
+                        onClick={() =>
+                          setReceiptPreview(u.user_fee_receipt ?? null)
+                        }
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-400">No Img</span>
+                    )}
+                  </td>
 
-              <td className="text-center">
-                {u.user_fee_receipt ? (
-                  <img
-                    src={u.user_fee_receipt}
-                    className="h-9 w-9 object-cover rounded cursor-pointer border"
-                    onClick={() => setReceiptPreview(u.user_fee_receipt)}
-                  />
-                ) : (
-                  <span className="text-xs text-gray-400">No Img</span>
-                )}
-              </td>
+                  <td className="flex gap-2">
+                    <button
+                      onClick={() => openEditModal(u)}
+                      className="p-1 rounded bg-blue-50 text-blue-600"
+                    >
+                      ✏️
+                    </button>
 
-              <td className="flex gap-2">
-                <button
-                  onClick={() => openEditModal(u)}
-                  className="p-1 rounded bg-blue-50 text-blue-600"
-                >
-                  ✏️
-                </button>
+                    {u.due_amount > 0 && (
+                      <button
+                        onClick={() => openCollectModal(u)}
+                        className="px-2 py-1 text-xs rounded bg-green-100 text-green-700"
+                      >
+                        Collect
+                      </button>
+                    )}
 
-                {u.due_amount > 0 && (
-                  <button
-                    onClick={() => openCollectModal(u)}
-                    className="px-2 py-1 text-xs rounded bg-green-100 text-green-700"
-                  >
-                    Collect
-                  </button>
-                )}
+                    <button
+                      onClick={() => openDeleteModal(u)}
+                      className="p-1 rounded bg-red-50 text-red-600"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
-                <button
-                  onClick={() => openDeleteModal(u)}
-                  className="p-1 rounded bg-red-50 text-red-600"
-                >
-                  🗑️
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-  </div>
-
-  {/* ================= MOBILE CARDS ================= */}
-{/* MOBILE VIEW */}
-<div className="md:hidden space-y-2">
-  {users.map((u) => (
-    <div
-      key={u.user_id}
-      className="
+      {/* ================= MOBILE CARDS ================= */}
+      {/* MOBILE VIEW */}
+      <div className="md:hidden space-y-2">
+        {users.map((u) => (
+          <div
+            key={u.user_id}
+            className="
         rounded-2xl
         bg-white/60 backdrop-blur-xl
         border border-white/30
         shadow
         p-2
       "
-    >
-      {/* ROW 1 */}
-      <div className="flex justify-between items-center mb-2">
-        <div className="font-semibold text-gray-900">
-          Name : {u.user_name}
-        </div>
+          >
+            {/* ROW 1 */}
+            <div className="flex justify-between items-center mb-2">
+              <div className="font-semibold text-gray-900">
+                Name : {u.user_name}
+              </div>
 
-        <span className="text-xs font-medium">
-          {getFeeStatus(u)}
-        </span>
-      </div>
+              <span className="text-xs font-medium">{getFeeStatus(u)}</span>
+            </div>
 
-      {/* ROW 2 – GRID */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-800">
-        <div>Room : <b>{u.room?.room_number || "-"}</b></div>
-        <div>Floor : <b>{u.room?.floor_number || "-"}</b></div>
+            {/* ROW 2 – GRID */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-800">
+              <div>
+                Room : <b>{u.room?.room_number || "-"}</b>
+              </div>
+              <div>
+                Floor : <b>{u.room?.floor_number || "-"}</b>
+              </div>
 
-        <div>Mobile : <b>{u.mobile || "-"}</b></div>
-        <div>Monthly Fee : <b>₹{u.monthly_fee}</b></div>
+              <div>
+                Mobile : <b>{u.mobile || "-"}</b>
+              </div>
+              <div>
+                Monthly Fee : <b>₹{u.monthly_fee}</b>
+              </div>
 
-        <div>Due : <b className="text-red-600">₹{u.due_amount}</b></div>
-        <div>
-          Delay :{" "}
-          <b>
-            {u.delay_days > 0 ? `${u.delay_days} days` : "-"}
-          </b>
-        </div>
+              <div>
+                Due : <b className="text-red-600">₹{u.due_amount}</b>
+              </div>
+              <div>
+                Delay : <b>{u.delay_days > 0 ? `${u.delay_days} days` : "-"}</b>
+              </div>
 
-        <div className="col-span-2">
-          Next Fee :{" "}
-          <b>
-            {u.next_fee_date
-              ? new Date(u.next_fee_date).toLocaleDateString()
-              : "-"}
-          </b>
-        </div>
-      </div>
+              <div className="col-span-2">
+                Next Fee :{" "}
+                <b>
+                  {u.next_fee_date
+                    ? new Date(u.next_fee_date).toLocaleDateString()
+                    : "-"}
+                </b>
+              </div>
+            </div>
 
-      {/* RECEIPT */}
-      <div className="mt-3">
-        <span className="text-xs text-gray-500">Receipt</span>
-        {u.user_fee_receipt ? (
-          <img
-            src={u.user_fee_receipt}
-            className="mt-1 h-10 w-10 rounded border object-cover"
-            onClick={() => setReceiptPreview(u.user_fee_receipt)}
-          />
-        ) : (
-          <div className="text-xs text-gray-400 mt-1">No Image</div>
-        )}
-      </div>
+            {/* RECEIPT */}
+            <div className="mt-3">
+              <span className="text-xs text-gray-500">Receipt</span>
+              {u.user_fee_receipt ? (
+                <Image
+                  alt="Receipt image"
+                  src={u.user_fee_receipt}
+                  className="mt-1 h-10 w-10 rounded border object-cover"
+                  onClick={() => setReceiptPreview(u.user_fee_receipt ?? null)}
+                />
+              ) : (
+                <div className="text-xs text-gray-400 mt-1">No Image</div>
+              )}
+            </div>
 
-      {/* ACTIONS */}
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          onClick={() => openEditModal(u)}
-          className="
+            {/* ACTIONS */}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => openEditModal(u)}
+                className="
             py-2 rounded-xl
             bg-blue-500/20 text-blue-700
             text-sm font-medium
           "
-        >
-          Edit
-        </button>
+              >
+                Edit
+              </button>
 
-        {u.due_amount > 0 && (
-          <button
-            onClick={() => openCollectModal(u)}
-            className="
+              {u.due_amount > 0 && (
+                <button
+                  onClick={() => openCollectModal(u)}
+                  className="
               py-2 rounded-xl
               bg-green-500/20 text-green-700
               text-sm font-medium
             "
-          >
-            Collect
-          </button>
-        )}
+                >
+                  Collect
+                </button>
+              )}
 
-        <button
-          onClick={() => openDeleteModal(u)}
-          className="
+              <button
+                onClick={() => openDeleteModal(u)}
+                className="
             col-span-2 py-2 rounded-xl
             bg-red-500/20 text-red-700
             text-sm font-medium
           "
-        >
-          Delete
-        </button>
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
-  ))}
-</div>
-
 
       {/* MODAL */}
       {modalOpen && (
@@ -715,17 +765,18 @@ export default function AdminUsersPage({
               {basicFields.map(({ key, label }) => (
                 <div key={key}>
                   <input
-                    className={`w-full rounded-xl px-4 py-3 text-sm
-    bg-white/50 backdrop-blur
-    border ${errors[key] ? "border-red-400" : "border-white/40"}
-    focus:outline-none focus:ring-2 focus:ring-blue-400
-  `}
+                    type={key === "monthly_fee" ? "number" : "text"}
                     placeholder={label}
+                    className={`w-full rounded-xl px-4 py-3 text-sm
+        bg-white/50 backdrop-blur
+        border ${errors[key] ? "border-red-400" : "border-white/40"}
+        focus:outline-none focus:ring-2 focus:ring-blue-400`}
                     value={form[key]}
                     onChange={(e) =>
                       setForm({ ...form, [key]: e.target.value })
                     }
                   />
+
                   {errors[key] && (
                     <p className="text-xs text-red-500 mt-1">{errors[key]}</p>
                   )}
@@ -802,10 +853,10 @@ export default function AdminUsersPage({
               {/* IMAGE PREVIEW (IMAGE ONLY) */}
               {form.user_fee_receipt_preview && (
                 <div className="relative">
-                  <img
+                  <Image
+                    alt="Receipt image"
                     src={form.user_fee_receipt_preview}
                     className="w-full h-24 object-contain rounded-lg"
-                    alt="Receipt"
                   />
                   <button
                     type="button"
@@ -948,20 +999,21 @@ export default function AdminUsersPage({
                   const file = e.target.files?.[0];
                   if (!file) return;
 
-                  setCollectReceipt(file);
+                  _setCollectReceipt(file);
                   setCollectPreview(URL.createObjectURL(file));
                 }}
               />
 
               {collectPreview && (
                 <div className="relative">
-                  <img
+                  <Image
+                    alt="Receipt image"
                     src={collectPreview}
                     className="w-full h-24 object-contain rounded-lg"
                   />
                   <button
                     onClick={() => {
-                      setCollectReceipt(null);
+                      _setCollectReceipt(null);
                       setCollectPreview("");
                     }}
                     className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
@@ -1079,9 +1131,9 @@ export default function AdminUsersPage({
               Fee Receipt
             </h3>
 
-            <img
+            <Image
+              alt="Receipt image"
               src={receiptPreview}
-              alt="Receipt Preview"
               className="w-full max-h-[60vh] object-contain rounded"
             />
           </div>

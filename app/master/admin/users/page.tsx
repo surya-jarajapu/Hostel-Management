@@ -4,6 +4,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Image from "next/image";
+import { supabase } from "@/app/lib/supabaseClient";
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
@@ -575,11 +576,12 @@ export default function AdminUsersPage() {
                   <td className="text-center">
                     {u.user_fee_receipt ? (
                       <Image
-                        alt="Receipt image"
                         src={u.user_fee_receipt}
-                        width={36}
-                        height={36}
-                        className="object-cover rounded cursor-pointer border"
+                        alt="Receipt"
+                        width={48}
+                        height={48}
+                        quality={90}
+                        className="rounded object-contain cursor-pointer"
                         onClick={() =>
                           setReceiptPreview(u.user_fee_receipt ?? null)
                         }
@@ -679,13 +681,15 @@ export default function AdminUsersPage() {
             {/* RECEIPT */}
             <div className="mt-3">
               <span className="text-xs text-gray-500">Receipt</span>
+
               {u.user_fee_receipt ? (
                 <Image
-                  alt="Receipt image"
                   src={u.user_fee_receipt}
-                  width={38}
-                  height={38}
-                  className="mt-1 rounded border object-cover"
+                  alt="Receipt image"
+                  width={48}
+                  height={48}
+                  quality={90}
+                  className="mt-1 rounded border object-contain cursor-pointer bg-white"
                   onClick={() => setReceiptPreview(u.user_fee_receipt ?? null)}
                 />
               ) : (
@@ -1013,7 +1017,8 @@ export default function AdminUsersPage() {
                     alt="Receipt image"
                     src={collectPreview}
                     height={36}
-                    className="w-full  object-contain rounded-lg"
+                    width={36}
+                    className="object-contain rounded-lg"
                   />
                   <button
                     onClick={() => {
@@ -1111,38 +1116,38 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {receiptPreview && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-          <div
-            className="
-    w-[360px]
-    rounded-3xl
-    bg-white/30 backdrop-blur-2xl
-    border border-white/30
-    shadow-[0_30px_70px_rgba(0,0,0,0.45)]
-    p-4 relative
-  "
-          >
-            {/* CLOSE BUTTON */}
-            <button
-              onClick={() => setReceiptPreview(null)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-black"
-            >
-              ✕
-            </button>
+  {receiptPreview && (
+  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+    <div
+      className="
+        w-[360px]
+        rounded-3xl
+        bg-white/30 backdrop-blur-2xl
+        border border-white/30
+        shadow-[0_30px_70px_rgba(0,0,0,0.45)]
+        p-4 relative
+      "
+    >
+      <button
+        onClick={() => setReceiptPreview(null)}
+        className="absolute top-2 right-2 text-gray-500 hover:text-black"
+      >
+        ✕
+      </button>
 
-            <h3 className="text-sm font-semibold mb-3 text-center p-2">
-              Fee Receipt
-            </h3>
+      <h3 className="text-sm font-semibold mb-3 text-center">
+        Fee Receipt
+      </h3>
 
-            <Image
-              alt="Receipt image"
-              src={receiptPreview}
-              className="w-full max-h-[60vh] object-contain rounded"
-            />
-          </div>
-        </div>
-      )}
+      <img
+        src={receiptPreview}
+        alt="Receipt image"
+        className="w-full max-h-[60vh] object-contain rounded bg-white"
+      />
+    </div>
+  </div>
+)}
+
       <button
         onClick={openCreateModal}
         className="

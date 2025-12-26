@@ -176,21 +176,24 @@ export default function AdminUsersPage() {
 
       setLoading(true);
 
-      const res = await fetch("http://localhost:3000/user/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          paging: "No",
-          search: search.trim(),
-          page_index: pageIndex,
-          page_count: 10,
-          date_format_id: "1111-1111-1111-1111",
-          time_zone_id: "2222-2222-2222-2222",
-        }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/user/search`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            paging: "No",
+            search: search.trim(),
+            page_index: pageIndex,
+            page_count: 10,
+            date_format_id: "1111-1111-1111-1111",
+            time_zone_id: "2222-2222-2222-2222",
+          }),
+        }
+      );
 
       const json = await res.json();
       setUsers(json.status ? json.data : []);
@@ -207,7 +210,7 @@ export default function AdminUsersPage() {
     if (!token) return;
 
     try {
-      const res = await fetch("http://localhost:3000/room/search", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/room/search`, {
         method: "POST", // ✅ REQUIRED
         headers: {
           "Content-Type": "application/json",
@@ -330,7 +333,7 @@ export default function AdminUsersPage() {
     }
 
     const res = await fetch(
-      `http://localhost:3000/user/${selectedUser.user_id}/collect-fee`,
+      `${process.env.NEXT_PUBLIC_API_URL}/user/${selectedUser.user_id}/collect-fee`,
       {
         method: "POST",
         headers: {
@@ -373,8 +376,8 @@ export default function AdminUsersPage() {
     const isEdit = !!editingUser;
     const method = isEdit ? "PATCH" : "POST";
     const url = isEdit
-      ? `http://localhost:3000/user/${editingUser.user_id}`
-      : "http://localhost:3000/user";
+      ? `${process.env.NEXT_PUBLIC_API_URL}/user/${editingUser.user_id}`
+      : `${process.env.NEXT_PUBLIC_API_URL}/user`;
 
     try {
       let receiptUrl: string | undefined = form.user_fee_receipt || undefined;
@@ -467,7 +470,7 @@ export default function AdminUsersPage() {
     if (!deleteUserData) return;
 
     const res = await fetch(
-      `http://localhost:3000/user/${deleteUserData.user_id}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/user/${deleteUserData.user_id}`,
       {
         method: "DELETE",
         headers: {
@@ -1116,10 +1119,10 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-  {receiptPreview && (
-  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-    <div
-      className="
+      {receiptPreview && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+          <div
+            className="
         w-[360px]
         rounded-3xl
         bg-white/30 backdrop-blur-2xl
@@ -1127,26 +1130,26 @@ export default function AdminUsersPage() {
         shadow-[0_30px_70px_rgba(0,0,0,0.45)]
         p-4 relative
       "
-    >
-      <button
-        onClick={() => setReceiptPreview(null)}
-        className="absolute top-2 right-2 text-gray-500 hover:text-black"
-      >
-        ✕
-      </button>
+          >
+            <button
+              onClick={() => setReceiptPreview(null)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+            >
+              ✕
+            </button>
 
-      <h3 className="text-sm font-semibold mb-3 text-center">
-        Fee Receipt
-      </h3>
+            <h3 className="text-sm font-semibold mb-3 text-center">
+              Fee Receipt
+            </h3>
 
-      <img
-        src={receiptPreview}
-        alt="Receipt image"
-        className="w-full max-h-[60vh] object-contain rounded bg-white"
-      />
-    </div>
-  </div>
-)}
+            <img
+              src={receiptPreview}
+              alt="Receipt image"
+              className="w-full max-h-[60vh] object-contain rounded bg-white"
+            />
+          </div>
+        </div>
+      )}
 
       <button
         onClick={openCreateModal}

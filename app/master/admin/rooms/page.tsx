@@ -42,7 +42,7 @@ const fetchRooms = useCallback(async () => {
 
   setLoading(true);
 
-  const res = await fetch("http://localhost:3000/room/search", {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/room/search`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -97,8 +97,8 @@ const openEditModal = (r: Room) => {
 
     const method = editingRoom ? "PATCH" : "POST";
     const url = editingRoom
-      ? `http://localhost:3000/room/${editingRoom.room_id}`
-      : `http://localhost:3000/room`;
+      ? `${process.env.NEXT_PUBLIC_API_URL}/room/${editingRoom.room_id}`
+      : `${process.env.NEXT_PUBLIC_API_URL}/room`;
 
     const res = await fetch(url, {
       method,
@@ -127,7 +127,7 @@ const openEditModal = (r: Room) => {
 
     if (!token) return;
 
-    const res = await fetch(`http://localhost:3000/room/${id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/room/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,

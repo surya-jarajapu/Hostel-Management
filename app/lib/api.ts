@@ -1,12 +1,14 @@
 import axios from "axios";
 
 const api = axios.create({
-  // baseURL: "http://localhost:3000", // ✅ backend base URL
-  baseURL: process.env.NEXT_PUBLIC_API_URL, // ✅ production ready
-  timeout: 5000,
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  timeout: 10000,
 });
 
-// Optional: attach interceptors (for auth, logs, errors, etc.)
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error("NEXT_PUBLIC_API_URL is not defined");
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -17,12 +19,18 @@ api.interceptors.response.use(
 
 export default api;
 // lib/api.ts
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE) {
+  throw new Error("NEXT_PUBLIC_API_URL is not defined");
+}
+
 export async function apiRequest<T>(
-  url: string,
+  path: string,
   method: string = "GET",
   body?: unknown
 ): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
@@ -35,3 +43,4 @@ export async function apiRequest<T>(
 
   return data;
 }
+

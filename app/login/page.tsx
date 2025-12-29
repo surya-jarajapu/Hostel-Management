@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
-
+import type { AxiosError } from "axios";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,26 +14,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
- async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault();
-  setError("");
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
 
-  try {
-    const res = await api.post("/auth/login", { email, password });
-    const data = res.data;
+    try {
+      const res = await api.post("/auth/login", { email, password });
+      const data = res.data;
 
-    login(data.data.token, data.data.masterUser);
+      login(data.data.token, data.data.masterUser);
 
-    if (data.data.masterUser.role === "ADMIN") {
-      router.replace("/dashboard/admin");
-    } else {
-      router.replace("/dashboard");
+      if (data.data.masterUser.role === "ADMIN") {
+        router.replace("/dashboard/admin");
+      } else {
+        router.replace("/dashboard");
+      }
+    } catch (err) {
+      const error = err as AxiosError<{ message?: string }>;
+      setError(error.response?.data?.message || "Invalid login");
     }
-  } catch (err: any) {
-    setError(err.response?.data?.message || "Invalid login");
   }
-}
-
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { supabase } from "@/app/lib/supabaseClient";
+import api from "@/app/lib/api";
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
@@ -35,6 +36,8 @@ export default function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteUserData, setDeleteUserData] = useState<User | null>(null);
+
+  
 
   const { user } = useAuth();
   // const hostelId = user?.hostel_id;
@@ -170,37 +173,43 @@ export default function AdminUsersPage() {
   // FETCH USERS
   // =========================
 
-  const fetchUsers = useCallback(
-    async (pageIndex = 0) => {
-      if (!token) return;
 
+
+const fetchUsers = useCallback(
+  async (pageIndex = 0) => {
+    if (!token) return;
+
+    try {
       setLoading(true);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/user/search`,
+      const res = await api.post(
+        "/user/search",
         {
-          method: "POST",
+          paging: "No",
+          search: search.trim(),
+          page_index: pageIndex,
+          page_count: 10,
+          date_format_id: "1111-1111-1111-1111",
+          time_zone_id: "2222-2222-2222-2222",
+        },
+        {
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            paging: "No",
-            search: search.trim(),
-            page_index: pageIndex,
-            page_count: 10,
-            date_format_id: "1111-1111-1111-1111",
-            time_zone_id: "2222-2222-2222-2222",
-          }),
         }
       );
 
-      const json = await res.json();
-      setUsers(json.status ? json.data : []);
+      setUsers(res.data.status ? res.data.data : []);
+    } catch (error) {
+      console.error("Fetch users failed", error);
+      setUsers([]);
+    } finally {
       setLoading(false);
-    },
-    [token, search]
-  );
+    }
+  },
+  [token, search]
+);
+
 
   // =========================
   // FETCH AVAILABLE ROOMS

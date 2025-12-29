@@ -50,7 +50,7 @@ const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ??
     "https://hostle-management-backend.onrender.com",
-  timeout: 10000,
+  timeout: 30000, // ⬅️ 30 seconds
 });
 
 api.interceptors.response.use(

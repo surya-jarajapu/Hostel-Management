@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import api from "../lib/api";
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,26 +14,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError("");
+ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  setError("");
 
-    if (!process.env.NEXT_PUBLIC_API_URL) {
-      throw new Error("NEXT_PUBLIC_API_URL is missing");
-    }
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.message || "Invalid login");
-      return;
-    }
+  try {
+    const res = await api.post("/auth/login", { email, password });
+    const data = res.data;
 
     login(data.data.token, data.data.masterUser);
 
@@ -40,7 +29,11 @@ export default function LoginPage() {
     } else {
       router.replace("/dashboard");
     }
+  } catch (err: any) {
+    setError(err.response?.data?.message || "Invalid login");
   }
+}
+
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">

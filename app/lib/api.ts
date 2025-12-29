@@ -44,12 +44,12 @@
 //   return data;
 // }
 
-
-
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL:
+    process.env.NEXT_PUBLIC_API_URL ??
+    "https://hostle-management-backend.onrender.com",
   timeout: 10000,
 });
 

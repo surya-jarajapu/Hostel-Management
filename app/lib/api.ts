@@ -51,6 +51,7 @@ const api = axios.create({
     process.env.NEXT_PUBLIC_API_URL ??
     "https://hostle-management-backend.onrender.com",
   timeout: 30000,
+  withCredentials: false, // 👈 IMPORTANT
   headers: {
     "Content-Type": "application/json",
   },

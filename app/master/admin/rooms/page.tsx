@@ -20,6 +20,7 @@ export default function AdminRoomsPage() {
   const [loading, setLoading] = useState(true);
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -103,10 +104,11 @@ export default function AdminRoomsPage() {
   };
 
   // CREATE / UPDATE ROOM
-  const [saving, setSaving] = useState(false);
 
   const saveRoom = async () => {
     if (!token) return;
+    if (saving) return;
+    setSaving(true);
 
     if (!form.room_number.trim()) {
       toast.error("Room number is required");
@@ -119,8 +121,6 @@ export default function AdminRoomsPage() {
     }
 
     try {
-      setSaving(true);
-
       const method = editingRoom ? "PATCH" : "POST";
       const url = editingRoom
         ? `${process.env.NEXT_PUBLIC_API_URL}/room/${editingRoom.room_id}`
@@ -154,33 +154,29 @@ export default function AdminRoomsPage() {
   };
 
   // DELETE ROOM
-const deleteRoom = async (id: string) => {
-  if (!token) return;
+  const deleteRoom = async (id: string) => {
+    if (!token) return;
 
-  if (!confirm("Delete room?")) return;
+    if (!confirm("Delete room?")) return;
 
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/room/${id}`,
-      {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/room/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        toast.error("Failed to delete room");
+        return;
       }
-    );
 
-    if (!res.ok) {
-      toast.error("Failed to delete room");
-      return;
+      toast.success("Room deleted successfully");
+      fetchRooms();
+    } catch (err) {
+      console.error("Delete room error:", err);
+      toast.error("Network error");
     }
-
-    toast.success("Room deleted successfully");
-    fetchRooms();
-  } catch (err) {
-    console.error("Delete room error:", err);
-    toast.error("Network error");
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 pt-16 px-4 sm:px-6">
@@ -357,9 +353,10 @@ const deleteRoom = async (id: string) => {
               </button>
               <button
                 onClick={saveRoom}
-                className="px-4 py-2 rounded-xl bg-green-600 text-white"
+                disabled={saving}
+                className="px-4 py-2 rounded-xl bg-green-600 text-white disabled:opacity-50"
               >
-                Save
+                {saving ? "Saving..." : "Save"}
               </button>
             </div>
           </div>

@@ -14,6 +14,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  type LoginErrorResponse = {
+    message?: string;
+  };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,7 +38,7 @@ export default function LoginPage() {
         router.replace("/dashboard");
       }
     } catch (err) {
-      const error = err as AxiosError<any>;
+      const error = err as AxiosError<LoginErrorResponse>;
 
       // ❌ INVALID CREDENTIALS
       if (error.response?.status === 401) {

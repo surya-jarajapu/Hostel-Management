@@ -63,17 +63,16 @@ export default function Navbar() {
   return (
     <>
       {/* ================= TOP NAVBAR ================= */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-2">
+      <nav className="fixed top-0 left-0 right-0 z-50">
         <div
           className="
-            mx-auto max-w-7xl h-14
-            flex items-center justify-between
-            rounded-2xl
-            bg-gradient-to-r from-[#0a84ff]/90 to-[#5ac8fa]/90
-            backdrop-blur-xl
-            border border-white/30
-            shadow-md
-          "
+    h-14
+    flex items-center justify-between
+    bg-gradient-to-r from-[#0a84ff]/90 to-[#5ac8fa]/90
+    backdrop-blur-xl
+    border-b border-white/30
+    shadow-md
+  "
         >
           {/* LEFT */}
           <div
@@ -105,7 +104,7 @@ export default function Navbar() {
           )}
 
           {/* RIGHT PROFILE */}
-          <div ref={profileRef} className="relative pr-5">
+          <div ref={profileRef} className="relative pr-4">
             <button
               onClick={() => setProfileOpen((v) => !v)}
               className="
@@ -121,13 +120,13 @@ export default function Navbar() {
             {profileOpen && (
               <div
                 className="
-                  absolute right-0 mt-4 w-72
-                  rounded-3xl
+                  absolute right-0 mt-4 w-64
+                  rounded-2xl
                   bg-white/20 backdrop-blur-2xl
                   border border-white/30
                   shadow-[0_30px_70px_rgba(0,0,0,0.45)]
                   overflow-hidden
-                  text-white
+                  text-gray-800
                 "
               >
                 {/* PROFILE HEADER */}
@@ -137,8 +136,10 @@ export default function Navbar() {
                   </div>
 
                   <div className="min-w-0">
-                    <div className="font-semibold truncate">{masterName}</div>
-                    <div className="text-sm text-white/70">{role}</div>
+                    <div className="font-semibold truncate  text-gray-800">
+                      {masterName}
+                    </div>
+                    <div className="text-sm  text-gray-800">{role}</div>
                   </div>
                 </div>
 
@@ -164,11 +165,11 @@ export default function Navbar() {
 
       {/* ================= MOBILE BOTTOM NAV ================= */}
       {role === "ADMIN" && (
-        <div className="fixed bottom-3 left-0 right-0 z-40 md:hidden px-4">
+        <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden">
           <div
             className="
               mx-auto max-w-md
-              rounded-2xl
+    
               bg-gradient-to-r from-[#0a84ff]/85 to-[#5ac8fa]/85
               backdrop-blur-xl
               border border-white/30

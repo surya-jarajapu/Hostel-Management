@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
 import type { AxiosError } from "axios";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,18 +21,36 @@ export default function LoginPage() {
 
     try {
       const res = await api.post("/auth/login", { email, password });
-      const data = res.data;
 
-      login(data.data.token, data.data.masterUser);
+      const { token, masterUser } = res.data.data;
 
-      if (data.data.masterUser.role === "ADMIN") {
+      login(token, masterUser);
+
+      // ✅ SUCCESS TOAST
+      toast.success("Login successful");
+
+      if (masterUser.role === "ADMIN") {
         router.replace("/dashboard/admin");
       } else {
         router.replace("/dashboard");
       }
     } catch (err) {
-      const error = err as AxiosError<{ message?: string }>;
-      setError(error.response?.data?.message || "Invalid login");
+      const error = err as AxiosError<any>;
+
+      // ❌ INVALID CREDENTIALS
+      if (error.response?.status === 401) {
+        toast.error(error.response.data?.message || "Invalid credentials");
+        return;
+      }
+
+      // ⚠️ BUSINESS ERROR
+      if (error.response?.status === 400) {
+        toast.error(error.response.data?.message || "Login not allowed");
+        return;
+      }
+
+      // 🔴 SERVER / NETWORK ERROR
+      toast.error("Server error. Please try again later");
     }
   }
 

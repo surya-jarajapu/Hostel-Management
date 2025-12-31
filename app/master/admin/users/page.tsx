@@ -1,29 +1,45 @@
 "use client";
 
 import { useAuth } from "@/app/context/AuthContext";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import Image from "next/image";
-import { supabase } from "@/app/lib/supabaseClient";
 import api from "@/app/lib/api";
 
+import { getSupabase } from "@/app/lib/supabaseClient";
+
 export default function AdminUsersPage() {
-  const [search, setSearch] = useState("");
-  const [rooms, setRooms] = useState<Room[]>([]);
+
+// UI state
+const [loading, setLoading] = useState(true);
+const [modalOpen, setModalOpen] = useState(false);
+const [collectOpen, setCollectOpen] = useState(false);
+const [deleteOpen, setDeleteOpen] = useState(false);
+const [saving, setSaving] = useState(false);
+
+// Auth / token
+const [token, setToken] = useState<string | null>(null);
+
+// Data
+const [users, setUsers] = useState<User[]>([]);
+const [rooms, setRooms] = useState<Room[]>([]);
+
+// Selection
+const [editingUser, setEditingUser] = useState<User | null>(null);
+const [selectedUser, setSelectedUser] = useState<User | null>(null);
+const [deleteUserData, setDeleteUserData] = useState<User | null>(null);
+
+// Search
+const [search, setSearch] = useState("");
+
+
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
 
-  const [modalOpen, setModalOpen] = useState(false);
-
-  const [collectOpen, setCollectOpen] = useState(false);
 
   const [paymentType, setPaymentType] = useState<"FULL" | "PARTIAL">("FULL");
   const [amount, setAmount] = useState<number>(0);
 
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
@@ -32,12 +48,6 @@ export default function AdminUsersPage() {
 
   const [_collectReceipt, _setCollectReceipt] = useState<File | null>(null);
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [deleteUserData, setDeleteUserData] = useState<User | null>(null);
-
-  
 
   const { user } = useAuth();
   // const hostelId = user?.hostel_id;
@@ -91,11 +101,6 @@ export default function AdminUsersPage() {
     setToken(t);
   }, []);
 
-  useEffect(() => {
-    if (token) {
-      fetchUsers();
-    }
-  }, [token]);
 
   const [form, setForm] = useState<UserForm>({
     user_name: "",
@@ -130,11 +135,11 @@ export default function AdminUsersPage() {
       throw new Error("Upload must run in browser");
     }
 
-    const { supabase } = await import("@/app/lib/supabaseClient");
+    const supabase = getSupabase();
 
     const fileName = `receipts/${Date.now()}-${file.name}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("receipts")
       .upload(fileName, file, {
         upsert: false,
@@ -146,11 +151,9 @@ export default function AdminUsersPage() {
       throw error;
     }
 
-    const { data: publicUrl } = supabase.storage
-      .from("receipts")
-      .getPublicUrl(fileName);
+    const { data } = supabase.storage.from("receipts").getPublicUrl(fileName);
 
-    return publicUrl.publicUrl;
+    return data.publicUrl;
   };
 
   // function PaymentStatusBadge({ status }: { status: string }) {
@@ -173,43 +176,40 @@ export default function AdminUsersPage() {
   // FETCH USERS
   // =========================
 
+  const fetchUsers = useCallback(
+    async (pageIndex = 0) => {
+      if (!token) return;
 
+      try {
+        setLoading(true);
 
-const fetchUsers = useCallback(
-  async (pageIndex = 0) => {
-    if (!token) return;
-
-    try {
-      setLoading(true);
-
-      const res = await api.post(
-        "/user/search",
-        {
-          paging: "No",
-          search: search.trim(),
-          page_index: pageIndex,
-          page_count: 10,
-          date_format_id: "1111-1111-1111-1111",
-          time_zone_id: "2222-2222-2222-2222",
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const res = await api.post(
+          "/user/search",
+          {
+            paging: "No",
+            search: search.trim(),
+            page_index: pageIndex,
+            page_count: 10,
+            date_format_id: "1111-1111-1111-1111",
+            time_zone_id: "2222-2222-2222-2222",
           },
-        }
-      );
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-      setUsers(res.data.status ? res.data.data : []);
-    } catch (error) {
-      console.error("Fetch users failed", error);
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
-  },
-  [token, search]
-);
-
+        setUsers(res.data.status ? res.data.data : []);
+      } catch (error) {
+        console.error("Fetch users failed", error);
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [token, search]
+  );
 
   // =========================
   // FETCH AVAILABLE ROOMS
@@ -219,21 +219,24 @@ const fetchUsers = useCallback(
     if (!token) return;
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/room/search`, {
-        method: "POST", // ✅ REQUIRED
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ JWT → hostel scoped
-        },
-        body: JSON.stringify({
-          paging: "No",
-          search: "",
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/room/search`,
+        {
+          method: "POST", // ✅ REQUIRED
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ JWT → hostel scoped
+          },
+          body: JSON.stringify({
+            paging: "No",
+            search: "",
 
-          // 🔴 REQUIRED BY BACKEND (YOU MISSED THIS)
-          date_format_id: "1111-1111-1111-1111",
-          time_zone_id: "2222-2222-2222-2222",
-        }),
-      });
+            // 🔴 REQUIRED BY BACKEND (YOU MISSED THIS)
+            date_format_id: "1111-1111-1111-1111",
+            time_zone_id: "2222-2222-2222-2222",
+          }),
+        }
+      );
 
       const json = await res.json();
 
@@ -249,9 +252,19 @@ const fetchUsers = useCallback(
     }
   };
 
+  const fetchedOnce = useRef(false);
+
   useEffect(() => {
-    if (modalOpen) fetchRooms();
-  }, [modalOpen, fetchRooms]);
+    if (!modalOpen) {
+      fetchedOnce.current = false;
+      return;
+    }
+
+    if (fetchedOnce.current) return;
+
+    fetchedOnce.current = true;
+    fetchRooms();
+  }, [modalOpen]);
 
   useEffect(() => {
     if (token) fetchUsers();
@@ -265,17 +278,15 @@ const fetchUsers = useCallback(
     }
   }, [collectOpen]);
 
-  const getFeeStatus = (u: User): string => {
-    if (u.due_amount === 0) return "🟢 Paid";
+const getFeeStatus = useCallback((u: User) => {
+  if (u.due_amount === 0) return "🟢 Paid";
+  const overdue = u.next_fee_date && new Date(u.next_fee_date) < new Date();
+  if (overdue && u.due_amount < u.monthly_fee) return "🔴 Overdue (Partial)";
+  if (overdue) return "🔴 Overdue";
+  if (u.due_amount < u.monthly_fee) return "🟡 Partial";
+  return "🟡 Due";
+}, []);
 
-    const overdue = u.next_fee_date && new Date(u.next_fee_date) < new Date();
-
-    if (overdue && u.due_amount < u.monthly_fee) return "🔴 Overdue (Partial)";
-    if (overdue) return "🔴 Overdue";
-    if (u.due_amount < u.monthly_fee) return "🟡 Partial";
-
-    return "🟡 Due";
-  };
 
   // =========================
   // MODAL HANDLERS
@@ -503,7 +514,7 @@ const fetchUsers = useCallback(
   // UI
   // =========================
   return (
-    <div className="min-h-screen bg-gray-100 pt-[96px] px-4 sm:px-6 pb-32 text-gray-800">
+    <div className="min-h-screen bg-gray-100 pt-16 px-4 sm:px-6 pb-32 text-gray-800">
       {/* HEADER */}
       <div className="mb-6">
         {/* TITLE */}

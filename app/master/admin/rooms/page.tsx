@@ -19,14 +19,10 @@ export default function AdminRoomsPage() {
 
   const [loading, setLoading] = useState(true);
 
-
   const [modalOpen, setModalOpen] = useState(false);
 
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    setToken(localStorage.getItem("token"));
-  }, []);
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const [form, setForm] = useState({
     floor_number: "",
@@ -37,30 +33,46 @@ export default function AdminRoomsPage() {
 
   // FETCH ROOMS
 
-const fetchRooms = useCallback(async () => {
-  if (!token) return;
+  const fetchRooms = useCallback(async () => {
+    if (!token) return;
 
-  setLoading(true);
+    try {
+      setLoading(true);
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/room/search`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      paging: "No",
-      search: "",
-      date_format_id: "1111-1111-1111-1111",
-      time_zone_id: "2222-2222-2222-2222",
-    }),
-  });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/room/search`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            paging: "No",
+            search: "",
+            date_format_id: "1111-1111-1111-1111",
+            time_zone_id: "2222-2222-2222-2222",
+          }),
+        }
+      );
 
-  const json: { data: Room[] } = await res.json();
-  setRooms(json.data ?? []);
-  setLoading(false);
-}, [token]);
+      const json = await res.json();
 
+      if (!res.ok || json?.status === false) {
+        toast.error(json?.message || "Failed to load rooms");
+        setRooms([]);
+        return;
+      }
+
+      setRooms(Array.isArray(json.data) ? json.data : []);
+    } catch (err) {
+      console.error("Fetch rooms error:", err);
+      toast.error("Network error while loading rooms");
+      setRooms([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     fetchRooms();
@@ -79,60 +91,82 @@ const fetchRooms = useCallback(async () => {
   };
 
   // OPEN EDIT MODAL
-const openEditModal = (r: Room) => {
-  setEditingRoom(r);
-  setForm({
-    floor_number: r.floor_number,
-    room_number: r.room_number,
-    total_beds: r.total_beds,
-    status: r.status,
-  });
-  setModalOpen(true);
-};
-
+  const openEditModal = (r: Room) => {
+    setEditingRoom(r);
+    setForm({
+      floor_number: r.floor_number,
+      room_number: r.room_number,
+      total_beds: r.total_beds,
+      status: r.status,
+    });
+    setModalOpen(true);
+  };
 
   // CREATE / UPDATE ROOM
+  const [saving, setSaving] = useState(false);
+
   const saveRoom = async () => {
-    const token = localStorage.getItem("token");
+    if (!token) return;
 
-    const method = editingRoom ? "PATCH" : "POST";
-    const url = editingRoom
-      ? `${process.env.NEXT_PUBLIC_API_URL}/room/${editingRoom.room_id}`
-      : `${process.env.NEXT_PUBLIC_API_URL}/room`;
-
-    const res = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(form),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast.error(data.error || "Failed to save room");
+    if (!form.room_number.trim()) {
+      toast.error("Room number is required");
       return;
     }
 
-    toast.success(`Room ${editingRoom ? "updated" : "created"} successfully`);
-    fetchRooms();
-    setModalOpen(false);
+    if (!form.total_beds || form.total_beds <= 0) {
+      toast.error("Total beds must be greater than 0");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const method = editingRoom ? "PATCH" : "POST";
+      const url = editingRoom
+        ? `${process.env.NEXT_PUBLIC_API_URL}/room/${editingRoom.room_id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/room`;
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data?.status === false) {
+        toast.error(data?.message || "Failed to save room");
+        return;
+      }
+
+      toast.success(`Room ${editingRoom ? "updated" : "created"} successfully`);
+      setModalOpen(false);
+      fetchRooms();
+    } catch (err) {
+      console.error("Save room error:", err);
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // DELETE ROOM
-  const deleteRoom = async (id: string) => {
-    if (!confirm("Delete room?")) return;
+const deleteRoom = async (id: string) => {
+  if (!token) return;
 
-    if (!token) return;
+  if (!confirm("Delete room?")) return;
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/room/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/room/${id}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
     if (!res.ok) {
       toast.error("Failed to delete room");
@@ -141,14 +175,18 @@ const openEditModal = (r: Room) => {
 
     toast.success("Room deleted successfully");
     fetchRooms();
-  };
+  } catch (err) {
+    console.error("Delete room error:", err);
+    toast.error("Network error");
+  }
+};
+
 
   return (
-    <div className="min-h-screen bg-gray-100 pt-[104px] px-4 sm:px-6 pb-32">
+    <div className="min-h-screen bg-gray-100 pt-16 px-4 sm:px-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-semibold text-gray-900">Manage Rooms</h1>
-        <p className="text-gray-500 mt-1">Create and manage hostel rooms</p>
+      <div className="mb-2">
+        <h1 className="text-lg font-semibold text-gray-900">Manage Rooms</h1>
       </div>
 
       {/* DESKTOP TABLE */}

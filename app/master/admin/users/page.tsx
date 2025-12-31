@@ -520,14 +520,14 @@ export default function AdminUsersPage() {
   return (
     <div className="min-h-screen bg-gray-100 pt-16 px-4 sm:px-6 pb-32 text-gray-800">
       {/* HEADER */}
-      <div className="mb-6">
+      <div className="mb-4">
         {/* TITLE */}
         <h1 className="text-lg sm:text-3xl font-semibold text-gray-900">
           Hostel Users
         </h1>
 
         {/* SEARCH */}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-2 flex gap-2">
           <input
             className="
         flex-1 rounded-xl
@@ -723,14 +723,15 @@ export default function AdminUsersPage() {
             </div>
 
             {/* ACTIONS */}
-            <div className="mt-4 grid grid-cols-2 gap-2">
+            {/* ACTIONS */}
+            <div className="mt-4 flex gap-2">
               <button
                 onClick={() => openEditModal(u)}
                 className="
-            py-2 rounded-xl
-            bg-blue-500/20 text-blue-700
-            text-sm font-medium
-          "
+      flex-1 py-2 rounded-xl
+      bg-blue-500/20 text-blue-700
+      text-sm font-medium
+    "
               >
                 Edit
               </button>
@@ -739,10 +740,10 @@ export default function AdminUsersPage() {
                 <button
                   onClick={() => openCollectModal(u)}
                   className="
-              py-2 rounded-xl
-              bg-green-500/20 text-green-700
-              text-sm font-medium
-            "
+        flex-1 py-2 rounded-xl
+        bg-green-500/20 text-green-700
+        text-sm font-medium
+      "
                 >
                   Collect
                 </button>
@@ -751,10 +752,10 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => openDeleteModal(u)}
                 className="
-            col-span-2 py-2 rounded-xl
-            bg-red-500/20 text-red-700
-            text-sm font-medium
-          "
+      flex-1 py-2 rounded-xl
+      bg-red-500/20 text-red-700
+      text-sm font-medium
+    "
               >
                 Delete
               </button>
@@ -873,14 +874,66 @@ export default function AdminUsersPage() {
               )}
 
               {/* RECEIPT UPLOAD */}
-              <div>
-                <label className="text-sm font-medium">
-                  Fee Receipt (Optional)
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-600">
+                  Fee Receipt <span className="text-gray-400">(optional)</span>
                 </label>
+
+                <label
+                  htmlFor="receipt-upload"
+                  className="
+      relative flex items-center justify-center
+      w-full h-9
+      rounded-xl
+      border border-dashed border-gray-300
+      bg-white/50 backdrop-blur
+      cursor-pointer
+      hover:border-blue-400
+      transition
+    "
+                >
+                  {!form.user_fee_receipt_preview ? (
+                    <div className="flex items-center gap-3 text-gray-500">
+                      <span className="text-lg">📷</span>
+                      <span className="text-sm">Upload receipt</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Image
+                        src={form.user_fee_receipt_preview}
+                        alt="Receipt preview"
+                        fill
+                        className="object-contain rounded-xl p-1"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setForm({
+                            ...form,
+                            user_fee_receipt_file: null,
+                            user_fee_receipt_preview: "",
+                          });
+                        }}
+                        className="
+            absolute top-1.5 right-1.5
+            bg-black/60 text-white
+            text-[10px] px-1.5 py-0.5
+            rounded-md
+          "
+                      >
+                        ✕
+                      </button>
+                    </>
+                  )}
+                </label>
+
                 <input
+                  id="receipt-upload"
                   type="file"
                   accept="image/*"
-                  className="mt-1 text-sm"
+                  className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;

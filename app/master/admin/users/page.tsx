@@ -46,7 +46,7 @@ const [search, setSearch] = useState("");
   // 🔹 Collect Fee receipt states
   const [collectPreview, setCollectPreview] = useState<string>("");
 
-  const [_collectReceipt, _setCollectReceipt] = useState<File | null>(null);
+  // const [_collectReceipt, _setCollectReceipt] = useState<File | null>(null);
 
 
   const { user } = useAuth();
@@ -74,12 +74,12 @@ const [search, setSearch] = useState("");
     room?: Room;
   };
 
-  type BackendResponse<T> = {
-    status: boolean;
-    message?: string;
-    data: T;
-    errors?: { field: string; message: string }[];
-  };
+  // type BackendResponse<T> = {
+  //   status: boolean;
+  //   message?: string;
+  //   data: T;
+  //   errors?: { field: string; message: string }[];
+  // };
 
   type UserForm = {
     user_name: string;
@@ -274,7 +274,7 @@ const [search, setSearch] = useState("");
     if (!collectOpen && collectPreview) {
       URL.revokeObjectURL(collectPreview);
       setCollectPreview("");
-      _setCollectReceipt(null);
+      // _setCollectReceipt(null);
     }
   }, [collectOpen]);
 
@@ -1029,7 +1029,7 @@ const getFeeStatus = useCallback((u: User) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
 
-                  _setCollectReceipt(file);
+                  // _setCollectReceipt(file);
                   setCollectPreview(URL.createObjectURL(file));
                 }}
               />
@@ -1045,7 +1045,7 @@ const getFeeStatus = useCallback((u: User) => {
                   />
                   <button
                     onClick={() => {
-                      _setCollectReceipt(null);
+                      // _setCollectReceipt(null);
                       setCollectPreview("");
                     }}
                     className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
@@ -1162,7 +1162,7 @@ const getFeeStatus = useCallback((u: User) => {
               Fee Receipt
             </h3>
 
-            <img
+            <Image
               src={receiptPreview}
               alt="Receipt image"
               className="w-full max-h-[60vh] object-contain rounded bg-white"

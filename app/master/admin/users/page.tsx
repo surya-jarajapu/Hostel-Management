@@ -506,6 +506,14 @@ export default function AdminUsersPage() {
     fetchUsers();
   };
 
+  const paymentOptions: Array<{
+    label: string;
+    value: "FULL" | "PARTIAL";
+  }> = [
+    { label: "Full", value: "FULL" },
+    { label: "Partial", value: "PARTIAL" },
+  ];
+
   // =========================
   // UI
   // =========================
@@ -807,37 +815,61 @@ export default function AdminUsersPage() {
 
               {/* PAYMENT TYPE (CREATE ONLY) */}
               {!editingUser && (
-                <>
-                  <label className="text-sm font-medium">Payment Type</label>
-                  <select
-                    className="
-    w-full rounded-xl px-4 py-3
-    bg-white/50 backdrop-blur
-    border border-white/40
-    focus:outline-none
-  "
-                    value={form.payment_type}
-                    onChange={(e) =>
-                      setForm({ ...form, payment_type: e.target.value })
-                    }
-                  >
-                    <option value="NONE">Pay Later</option>
-                    <option value="FULL">Full Payment</option>
-                    <option value="PARTIAL">Partial Payment</option>
-                  </select>
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700">
+                    Payment Type
+                  </label>
 
+                  {/* SEGMENTED BUTTONS */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: "Later", value: "NONE" },
+                      { label: "Full", value: "FULL" },
+                      { label: "Partial", value: "PARTIAL" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            payment_type: opt.value,
+                            paid_amount: opt.value === "PARTIAL" ? "" : "",
+                          }))
+                        }
+                        className={`
+            py-3 rounded-xl text-sm font-medium transition
+            ${
+              form.payment_type === opt.value
+                ? "bg-blue-500 text-white shadow"
+                : "bg-white/60 text-gray-800 border border-white/40"
+            }
+          `}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* PARTIAL AMOUNT */}
                   {form.payment_type === "PARTIAL" && (
                     <input
                       type="number"
+                      inputMode="numeric"
                       placeholder="Paid Amount"
-                      className="w-full rounded-md border px-3 py-2"
-                      value={form.paid_amount}
+                      className="
+          w-full rounded-xl px-4 py-3
+          bg-white/60 backdrop-blur
+          border border-white/40
+          focus:outline-none focus:ring-2 focus:ring-blue-400
+        "
+                      value={form.paid_amount || ""}
                       onChange={(e) =>
                         setForm({ ...form, paid_amount: e.target.value })
                       }
                     />
                   )}
-                </>
+                </div>
               )}
 
               {/* RECEIPT UPLOAD */}
@@ -992,43 +1024,57 @@ export default function AdminUsersPage() {
                 <b>Due:</b> ₹{selectedUser.due_amount}
               </p>
 
-              <select
-                className="w-full rounded-md border px-3 py-2"
-                value={paymentType}
-                onChange={(e) => {
-                  const t = e.target.value as "FULL" | "PARTIAL";
-                  setPaymentType(t);
+              {/* PAYMENT TYPE */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700">
+                  Payment Type
+                </label>
 
-                  // ✅ Only auto-fill for FULL
-                  if (t === "FULL") {
-                    setAmount(selectedUser.due_amount);
-                  } else {
-                    setAmount(""); // ✅ empty, user types freely
-                  }
-                }}
-              >
-                <option value="FULL">Full Payment</option>
-                <option value="PARTIAL">Partial Payment</option>
-              </select>
+                {/* SEGMENTED BUTTONS */}
+                <div className="grid grid-cols-2 gap-2">
+                  {paymentOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setPaymentType(opt.value); // ✅ NO ERROR
+                        if (opt.value === "FULL") {
+                          setAmount(selectedUser.due_amount);
+                        } else {
+                          setAmount("");
+                        }
+                      }}
+                      className={`
+        py-3 rounded-xl text-sm font-medium transition
+        ${
+          paymentType === opt.value
+            ? "bg-green-500 text-white"
+            : "bg-white/60 text-gray-800 border"
+        }
+      `}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
 
-              {paymentType === "PARTIAL" && (
-                <input
-                  type="number"
-                  className="w-full rounded-md border px-3 py-2"
-                  placeholder="Enter amount"
-                  value={amount}
-                  onChange={(e) => {
-                    const v = e.target.value;
-
-                    if (v === "") {
-                      setAmount("");
-                      return;
-                    }
-
-                    setAmount(Number(v));
-                  }}
-                />
-              )}
+                {/* AMOUNT INPUT */}
+                {paymentType === "PARTIAL" && (
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="Enter amount"
+                    className="
+        w-full rounded-xl px-4 py-3
+        bg-white/60 backdrop-blur
+        border border-white/40
+        focus:outline-none focus:ring-2 focus:ring-green-400
+      "
+                    value={amount || ""}
+                    onChange={(e) => setAmount(Number(e.target.value) || "")}
+                  />
+                )}
+              </div>
 
               {/* RECEIPT */}
               <input

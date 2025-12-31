@@ -9,37 +9,32 @@ import api from "@/app/lib/api";
 import { getSupabase } from "@/app/lib/supabaseClient";
 
 export default function AdminUsersPage() {
+  // UI state
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [collectOpen, setCollectOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-// UI state
-const [loading, setLoading] = useState(true);
-const [modalOpen, setModalOpen] = useState(false);
-const [collectOpen, setCollectOpen] = useState(false);
-const [deleteOpen, setDeleteOpen] = useState(false);
-const [saving, setSaving] = useState(false);
+  // Auth / token
+  const [token, setToken] = useState<string | null>(null);
 
-// Auth / token
-const [token, setToken] = useState<string | null>(null);
+  // Data
+  const [users, setUsers] = useState<User[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
 
-// Data
-const [users, setUsers] = useState<User[]>([]);
-const [rooms, setRooms] = useState<Room[]>([]);
+  // Selection
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [deleteUserData, setDeleteUserData] = useState<User | null>(null);
 
-// Selection
-const [editingUser, setEditingUser] = useState<User | null>(null);
-const [selectedUser, setSelectedUser] = useState<User | null>(null);
-const [deleteUserData, setDeleteUserData] = useState<User | null>(null);
-
-// Search
-const [search, setSearch] = useState("");
-
-
+  // Search
+  const [search, setSearch] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-
   const [paymentType, setPaymentType] = useState<"FULL" | "PARTIAL">("FULL");
-  const [amount, setAmount] = useState<number>(0);
-
+  const [amount, setAmount] = useState<number | "">("");
 
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
@@ -47,7 +42,6 @@ const [search, setSearch] = useState("");
   const [collectPreview, setCollectPreview] = useState<string>("");
 
   // const [_collectReceipt, _setCollectReceipt] = useState<File | null>(null);
-
 
   const { user } = useAuth();
   // const hostelId = user?.hostel_id;
@@ -100,7 +94,6 @@ const [search, setSearch] = useState("");
     const t = localStorage.getItem("token");
     setToken(t);
   }, []);
-
 
   const [form, setForm] = useState<UserForm>({
     user_name: "",
@@ -278,15 +271,14 @@ const [search, setSearch] = useState("");
     }
   }, [collectOpen]);
 
-const getFeeStatus = useCallback((u: User) => {
-  if (u.due_amount === 0) return "🟢 Paid";
-  const overdue = u.next_fee_date && new Date(u.next_fee_date) < new Date();
-  if (overdue && u.due_amount < u.monthly_fee) return "🔴 Overdue (Partial)";
-  if (overdue) return "🔴 Overdue";
-  if (u.due_amount < u.monthly_fee) return "🟡 Partial";
-  return "🟡 Due";
-}, []);
-
+  const getFeeStatus = useCallback((u: User) => {
+    if (u.due_amount === 0) return "🟢 Paid";
+    const overdue = u.next_fee_date && new Date(u.next_fee_date) < new Date();
+    if (overdue && u.due_amount < u.monthly_fee) return "🔴 Overdue (Partial)";
+    if (overdue) return "🔴 Overdue";
+    if (u.due_amount < u.monthly_fee) return "🟡 Partial";
+    return "🟡 Due";
+  }, []);
 
   // =========================
   // MODAL HANDLERS
@@ -344,6 +336,10 @@ const getFeeStatus = useCallback((u: User) => {
     // 🔐 Guard: selectedUser CAN be null
     if (!selectedUser) {
       toast.error("No user selected");
+      return;
+    }
+    if (amount === "") {
+      toast.error("Enter amount");
       return;
     }
 
@@ -622,14 +618,12 @@ const getFeeStatus = useCallback((u: User) => {
                       ✏️
                     </button>
 
-                    {u.due_amount > 0 && (
-                      <button
-                        onClick={() => openCollectModal(u)}
-                        className="px-2 py-1 text-xs rounded bg-green-100 text-green-700"
-                      >
-                        Collect
-                      </button>
-                    )}
+                    <button
+                      disabled={amount === "" || amount <= 0}
+                      className="disabled:opacity-50"
+                    >
+                      Collect
+                    </button>
 
                     <button
                       onClick={() => openDeleteModal(u)}
@@ -1004,7 +998,13 @@ const getFeeStatus = useCallback((u: User) => {
                 onChange={(e) => {
                   const t = e.target.value as "FULL" | "PARTIAL";
                   setPaymentType(t);
-                  setAmount(t === "FULL" ? selectedUser.due_amount : 0);
+
+                  // ✅ Only auto-fill for FULL
+                  if (t === "FULL") {
+                    setAmount(selectedUser.due_amount);
+                  } else {
+                    setAmount(""); // ✅ empty, user types freely
+                  }
                 }}
               >
                 <option value="FULL">Full Payment</option>
@@ -1015,8 +1015,18 @@ const getFeeStatus = useCallback((u: User) => {
                 <input
                   type="number"
                   className="w-full rounded-md border px-3 py-2"
+                  placeholder="Enter amount"
                   value={amount}
-                  onChange={(e) => setAmount(Number(e.target.value))}
+                  onChange={(e) => {
+                    const v = e.target.value;
+
+                    if (v === "") {
+                      setAmount("");
+                      return;
+                    }
+
+                    setAmount(Number(v));
+                  }}
                 />
               )}
 

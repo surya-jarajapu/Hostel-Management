@@ -108,7 +108,7 @@ export default function Navbar() {
             <button
               onClick={() => setProfileOpen((v) => !v)}
               className="
-                w-9 h-9 rounded-full
+                w-6 h-6 rounded-full
                 bg-white/25 backdrop-blur-md
                 flex items-center justify-center
                 text-white font-semibold
@@ -117,48 +117,57 @@ export default function Navbar() {
               {masterName?.[0]?.toUpperCase()}
             </button>
 
-            {profileOpen && (
-              <div
-                className="
-                  absolute right-0 mt-4 w-64
-                  rounded-2xl
-                  bg-white/20 backdrop-blur-2xl
-                  border border-white/30
-                  shadow-[0_30px_70px_rgba(0,0,0,0.45)]
-                  overflow-hidden
-                  text-gray-800
-                "
-              >
-                {/* PROFILE HEADER */}
-                <div className="p-5 flex items-center gap-4 border-b border-white/20">
-                  <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center">
-                    <UserCircle size={28} />
-                  </div>
+       {profileOpen && (
+  <div
+    className="
+      absolute right-0 top-11
+      w-64
+      rounded-2xl
+      bg-gray-100
+      border border-gray-200
+      shadow-xl
+      overflow-hidden
+      text-gray-800
+    "
+  >
+    {/* PROFILE INFO */}
+    <div className="px-4 py-4 space-y-2 text-sm">
+      <div className="flex justify-between">
+        <span className="text-gray-500">Name :</span>
+        <span className="font-medium truncate max-w-[140px] text-right">
+          {masterName}
+        </span>
+      </div>
 
-                  <div className="min-w-0">
-                    <div className="font-semibold truncate  text-gray-800">
-                      {masterName}
-                    </div>
-                    <div className="text-sm  text-gray-800">{role}</div>
-                  </div>
-                </div>
+      <div className="flex justify-between">
+        <span className="text-gray-500">Role :</span>
+        <span className="font-medium text-blue-600">
+          {role}
+        </span>
+      </div>
+    </div>
 
-                {/* LOGOUT */}
-                <button
-                  onClick={logout}
-                  className="
-                    w-full px-5 py-4
-                    flex items-center gap-3
-                    text-red-300 hover:text-red-200
-                    hover:bg-red-500/20
-                    transition
-                  "
-                >
-                  <LogOut size={18} />
-                  Logout
-                </button>
-              </div>
-            )}
+    {/* DIVIDER */}
+    <div className="h-px bg-gray-300" />
+
+    {/* LOGOUT */}
+    <button
+      onClick={logout}
+      className="
+        w-full px-4 py-3
+        flex items-center gap-3
+        text-sm font-medium
+        text-red-600
+        hover:bg-red-200/40
+        transition
+      "
+    >
+      <LogOut size={16} />
+      Logout
+    </button>
+  </div>
+)}
+
           </div>
         </div>
       </nav>

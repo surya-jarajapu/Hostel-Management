@@ -121,7 +121,7 @@ export default function Navbar() {
   <div
     className="
       absolute right-0 top-11
-      w-64
+      w-48
       rounded-2xl
       bg-gray-100
       border border-gray-200

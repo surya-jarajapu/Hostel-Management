@@ -533,9 +533,8 @@ export default function AdminUsersPage() {
         flex-1 rounded-xl
         bg-white/60 backdrop-blur
         border border-gray-200
-        px-4 py-2.5 text-sm
-        focus:outline-none focus:ring-2 focus:ring-blue-400
-      "
+        px-4 py-2 text-sm
+        focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Search name / mobile / room"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -546,7 +545,7 @@ export default function AdminUsersPage() {
             className="
         rounded-xl
         bg-gradient-to-br from-[#0a84ff] to-[#5ac8fa]
-        text-white px-4 py-2.5 text-sm
+        text-white px-4 py-2 text-sm
         shadow
       "
           >

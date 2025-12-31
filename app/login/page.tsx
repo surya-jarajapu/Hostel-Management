@@ -38,22 +38,19 @@ export default function LoginPage() {
         router.replace("/dashboard");
       }
     } catch (err) {
-      const error = err as AxiosError<LoginErrorResponse>;
+      const error = err as AxiosError;
 
-      // ❌ INVALID CREDENTIALS
+      if (error.code === "ECONNABORTED") {
+        toast.error("Server is waking up. Please try again in 5 seconds.");
+        return;
+      }
+
       if (error.response?.status === 401) {
-        toast.error(error.response.data?.message || "Invalid credentials");
+        toast.error("Invalid credentials");
         return;
       }
 
-      // ⚠️ BUSINESS ERROR
-      if (error.response?.status === 400) {
-        toast.error(error.response.data?.message || "Login not allowed");
-        return;
-      }
-
-      // 🔴 SERVER / NETWORK ERROR
-      toast.error("Server error. Please try again later");
+      toast.error("Server error. Try again shortly.");
     }
   }
 

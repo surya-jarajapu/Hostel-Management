@@ -11,7 +11,7 @@ const api = axios.create({
   },
 });
 
-
+console.log(process.env.NEXT_PUBLIC_API_URL);
 
 // 🔐 Attach JWT token
 api.interceptors.request.use(
@@ -39,9 +39,7 @@ api.interceptors.response.use(
 
     const status = error.response.status;
     const message =
-      error.response.data?.message ||
-      error.message ||
-      "Something went wrong";
+      error.response.data?.message || error.message || "Something went wrong";
 
     console.error(`API Error ${status}:`, message);
 

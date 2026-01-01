@@ -1,15 +1,24 @@
 import axios from "axios";
 
+// const api = axios.create({
+//   baseURL:
+//     process.env.NEXT_PUBLIC_API_URL ??
+//     "https://hostle-management-backend.onrender.com/api",
+//   timeout: 10000, // 🔥 increased for Neon cold start
+//   withCredentials: false,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
 const api = axios.create({
-  baseURL:
-    process.env.NEXT_PUBLIC_API_URL ??
-    "https://hostle-management-backend.onrender.com/api",
-  timeout: 10000, // 🔥 increased for Neon cold start
-  withCredentials: false,
+  baseURL: "https://hostle-management-backend.onrender.com/api",
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
 
 console.log(process.env.NEXT_PUBLIC_API_URL);
 

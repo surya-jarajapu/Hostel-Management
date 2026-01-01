@@ -97,10 +97,13 @@ export default function AdminRoomsPage() {
       toast.success(`Room ${editingRoom ? "updated" : "created"} successfully`);
       setModalOpen(false);
       fetchRooms();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to save room");
-    } finally {
-      setSaving(false);
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(err.message);
+        toast.error(err.message);
+      } else {
+        toast.error("Something went wrong");
+      }
     }
   };
 

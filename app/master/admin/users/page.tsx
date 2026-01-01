@@ -149,21 +149,6 @@ export default function AdminUsersPage() {
     return data.publicUrl;
   };
 
-  // function PaymentStatusBadge({ status }: { status: string }) {
-  //   if (status === "APPROVED") {
-  //     return (
-  //       <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300">
-  //         Completed
-  //       </span>
-  //     );
-  //   }
-
-  //   return (
-  //     <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-300">
-  //       Pending
-  //     </span>
-  //   );
-  // }
 
   // =========================
   // FETCH USERS

@@ -1,19 +1,17 @@
-
-
 import axios from "axios";
 
 const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ??
     "https://hostle-management-backend.onrender.com",
-  timeout: 6000,
-  withCredentials: false, // 👈 IMPORTANT
+  timeout: 10000, // 🔥 increased for Neon cold start
+  withCredentials: false,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// 🔐 Request interceptor → attach token
+// 🔐 Attach JWT token
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
@@ -27,21 +25,28 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 🚨 Response interceptor → global error handling
+// 🚨 Global response handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // ⛔ Network / server down / cold start
+    if (!error.response) {
+      console.error("Network error or server waking up");
+      return Promise.reject(error);
+    }
+
+    const status = error.response.status;
     const message =
-      error?.response?.data?.message ||
-      error?.message ||
+      error.response.data?.message ||
+      error.message ||
       "Something went wrong";
 
-    console.error("API Error:", message);
+    console.error(`API Error ${status}:`, message);
 
-    // Optional: auto logout on 401
-    if (error?.response?.status === 401) {
+    // 🔐 Token expired / invalid
+    if (status === 401) {
       localStorage.removeItem("token");
-      // window.location.href = "/login";
+      window.location.href = "/login"; // ✅ MUST redirect
     }
 
     return Promise.reject(error);

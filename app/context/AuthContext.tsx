@@ -8,6 +8,7 @@ import {
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
+import api from "../lib/api";
 
 /* ================= TYPES ================= */
 
@@ -29,7 +30,7 @@ type User = {
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  login: (token: string, user: User) => void;
+  login: (token: string, user: User) => Promise<void>;
   logout: () => void;
 };
 
@@ -43,40 +44,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
-  // 🔁 Restore session
+  // 🔁 Restore & validate session
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userStr = localStorage.getItem("user");
-
-    if (token && userStr) {
-      try {
-        const parsedUser: User = JSON.parse(userStr);
-        setUser(parsedUser);
-      } catch {
-        setUser(null);
+    async function restoreSession() {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
       }
-    } else {
-      setUser(null);
+
+      try {
+        // 🔥 Validate token + wake Neon
+        const res = await api.get("/auth/me");
+        setUser(res.data);
+        localStorage.setItem("user", JSON.stringify(res.data));
+      } catch {
+        localStorage.clear();
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    setLoading(false);
+    restoreSession();
   }, []);
 
   // ✅ LOGIN
-  const login = (token: string, userData: User) => {
-    setUser(userData);
+  const login = async (token: string, userData: User) => {
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
-    document.cookie = `token=${token}; path=/`;
+    setUser(userData);
+
+    // 🔥 Ensure DB wake immediately
+    await api.get("/auth/me");
   };
 
   // ✅ LOGOUT
   const logout = () => {
-    setUser(null);
     localStorage.clear();
-    document.cookie = "token=; Max-Age=0; path=/";
+    setUser(null);
     router.replace("/login");
   };
 

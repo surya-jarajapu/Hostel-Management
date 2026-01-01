@@ -18,41 +18,49 @@ export default function LoginPage() {
     message?: string;
   };
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError("");
+ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  setError("");
 
-    try {
-      const res = await api.post("/auth/login", { email, password });
+  try {
+    const res = await api.post("/auth/login", { email, password });
 
-      const { token, masterUser } = res.data.data;
+    const { token, masterUser } = res.data.data;
 
-      login(token, masterUser);
+    // 🔐 Save auth
+    login(token, masterUser);
 
-      // ✅ SUCCESS TOAST
-      toast.success("Login successful");
+    // 🔥 IMPORTANT: wake DB + validate token
+    await api.get("/auth/me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      if (masterUser.role === "ADMIN") {
-        router.replace("/dashboard/admin");
-      } else {
-        router.replace("/dashboard");
-      }
-    } catch (err) {
-      const error = err as AxiosError;
+    toast.success("Login successful");
 
-      if (error.code === "ECONNABORTED") {
-        toast.error("Server is waking up. Please try again in 5 seconds.");
-        return;
-      }
-
-      if (error.response?.status === 401) {
-        toast.error("Invalid credentials");
-        return;
-      }
-
-      toast.error("Server error. Try again shortly.");
+    if (masterUser.role === "ADMIN") {
+      router.replace("/dashboard/admin");
+    } else {
+      router.replace("/dashboard");
     }
+  } catch (err) {
+    const error = err as AxiosError;
+
+    if (error.code === "ECONNABORTED") {
+      toast.error("Server is waking up. Please try again in 5 seconds.");
+      return;
+    }
+
+    if (error.response?.status === 401) {
+      toast.error("Invalid credentials");
+      return;
+    }
+
+    toast.error("Server error. Try again shortly.");
   }
+}
+
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">

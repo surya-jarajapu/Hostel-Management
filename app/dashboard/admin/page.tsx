@@ -55,7 +55,6 @@ type ModalType = "PARTIAL" | "OVERDUE" | "BEDS" | "PENDING" | null;
 /* ================= PAGE ================= */
 
 export default function AdminDashboardPage() {
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalType, setModalType] = useState<ModalType>(null);
   const [loaded, setLoaded] = useState(false);
@@ -69,23 +68,32 @@ export default function AdminDashboardPage() {
     pending_list: 0,
   });
 
-  useEffect(() => {
-    setToken(localStorage.getItem("token"));
-  }, []);
 
-  useEffect(() => {
-    if (!token || loaded) return;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/dashboard`, {
-      headers: { Authorization: `Bearer ${token}` },
+ useEffect(() => {
+  if (loaded) return;
+
+  api.get("/admin/dashboard")
+    .then((res) => {
+      setStats(res.data.data);
+      setLoaded(true);
     })
-      .then((r) => r.json())
-      .then((j) => {
-        setStats(j.data);
-        setLoading(false);
-        setLoaded(true);
+    .catch(() => {
+      // fail-safe to prevent crash
+      setStats({
+        total_users: 0,
+        partial_users: 0,
+        overdue_users: 0,
+        available_beds: 0,
+        collected_this_month: 0,
+        pending_list: 0,
       });
-  }, [token, loaded]);
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+}, [loaded]);
+
 
   return (
     <div className="min-h-screen bg-gray-100 pt-16 px-4 sm:px-6">
@@ -100,7 +108,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
 <StatCard
   title="Total Users"
-  value={loading ? "—" : stats.total_users}
+  value={loading ? "—" : stats?.total_users ?? 0}
   icon={<Users size={18} />}
   gradient="from-blue-600 to-cyan-400"
 />

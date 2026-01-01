@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import api from "@/app/lib/api";
 
 type Room = {
   room_id: string;
@@ -22,9 +23,6 @@ export default function AdminRoomsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
   const [form, setForm] = useState({
     floor_number: "",
     room_number: "",
@@ -35,45 +33,25 @@ export default function AdminRoomsPage() {
   // FETCH ROOMS
 
   const fetchRooms = useCallback(async () => {
-    if (!token) return;
-
     try {
       setLoading(true);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/room/search`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            paging: "No",
-            search: "",
-            date_format_id: "1111-1111-1111-1111",
-            time_zone_id: "2222-2222-2222-2222",
-          }),
-        }
-      );
+      const res = await api.post("/room/search", {
+        paging: "No",
+        search: "",
+        date_format_id: "1111-1111-1111-1111",
+        time_zone_id: "2222-2222-2222-2222",
+      });
 
-      const json = await res.json();
-
-      if (!res.ok || json?.status === false) {
-        toast.error(json?.message || "Failed to load rooms");
-        setRooms([]);
-        return;
-      }
-
-      setRooms(Array.isArray(json.data) ? json.data : []);
+      setRooms(Array.isArray(res.data.data) ? res.data.data : []);
     } catch (err) {
       console.error("Fetch rooms error:", err);
-      toast.error("Network error while loading rooms");
+      toast.error("Failed to load rooms");
       setRooms([]);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     fetchRooms();
@@ -106,48 +84,21 @@ export default function AdminRoomsPage() {
   // CREATE / UPDATE ROOM
 
   const saveRoom = async () => {
-    if (!token) return;
     if (saving) return;
     setSaving(true);
 
-    if (!form.room_number.trim()) {
-      toast.error("Room number is required");
-      return;
-    }
-
-    if (!form.total_beds || form.total_beds <= 0) {
-      toast.error("Total beds must be greater than 0");
-      return;
-    }
-
     try {
-      const method = editingRoom ? "PATCH" : "POST";
-      const url = editingRoom
-        ? `${process.env.NEXT_PUBLIC_API_URL}/room/${editingRoom.room_id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/room`;
+      const url = editingRoom ? `/room/${editingRoom.room_id}` : `/room`;
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
+      const method = editingRoom ? "patch" : "post";
 
-      const data = await res.json();
-
-      if (!res.ok || data?.status === false) {
-        toast.error(data?.message || "Failed to save room");
-        return;
-      }
+      await api[method](url, form);
 
       toast.success(`Room ${editingRoom ? "updated" : "created"} successfully`);
       setModalOpen(false);
       fetchRooms();
-    } catch (err) {
-      console.error("Save room error:", err);
-      toast.error("Something went wrong");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to save room");
     } finally {
       setSaving(false);
     }
@@ -155,26 +106,14 @@ export default function AdminRoomsPage() {
 
   // DELETE ROOM
   const deleteRoom = async (id: string) => {
-    if (!token) return;
-
     if (!confirm("Delete room?")) return;
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/room/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        toast.error("Failed to delete room");
-        return;
-      }
-
+      await api.delete(`/room/${id}`);
       toast.success("Room deleted successfully");
       fetchRooms();
-    } catch (err) {
-      console.error("Delete room error:", err);
-      toast.error("Network error");
+    } catch {
+      toast.error("Failed to delete room");
     }
   };
 

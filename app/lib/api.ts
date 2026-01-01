@@ -3,7 +3,7 @@ import axios from "axios";
 const api = axios.create({
   baseURL:
     process.env.NEXT_PUBLIC_API_URL ??
-    "https://hostle-management-backend.onrender.com",
+    "https://hostle-management-backend.onrender.com/api",
   timeout: 10000, // 🔥 increased for Neon cold start
   withCredentials: false,
   headers: {

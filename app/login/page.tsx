@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
 import type { AxiosError } from "axios";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,47 +15,48 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  type LoginErrorResponse = {
-    message?: string;
-  };
 
- async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+
+async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
   e.preventDefault();
   setError("");
 
-  try {
-    const res = await api.post("/auth/login", { email, password });
+  let loadingToastId: string | undefined;
 
+  try {
+    // 🔐 Login
+    const res = await api.post("/auth/login", { email, password });
     const { token, masterUser } = res.data.data;
 
-    // 🔐 Save auth
     login(token, masterUser);
 
-    // 🔥 IMPORTANT: wake DB + validate token
-    await api.get("/auth/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // 🟡 Show gentle loading while server/DB wakes
+    loadingToastId = toast.loading(
+      "Starting server… this may take a few seconds on first load."
+    );
 
+    // 🔥 Wake DB + validate token (Axios adds Authorization automatically)
+    await api.get("/auth/me");
+
+    toast.dismiss(loadingToastId);
     toast.success("Login successful");
 
-    if (masterUser.role === "ADMIN") {
-      router.replace("/dashboard/admin");
-    } else {
-      router.replace("/dashboard");
-    }
+    router.replace(
+      masterUser.role === "ADMIN" ? "/dashboard/admin" : "/dashboard"
+    );
   } catch (err) {
-    const error = err as AxiosError;
+    if (loadingToastId) toast.dismiss(loadingToastId);
 
-    if (error.code === "ECONNABORTED") {
-      toast.error("Server is waking up. Please try again in 5 seconds.");
-      return;
-    }
+    if (axios.isAxiosError(err)) {
+      if (err.response?.status === 401) {
+        toast.error("Invalid credentials");
+        return;
+      }
 
-    if (error.response?.status === 401) {
-      toast.error("Invalid credentials");
-      return;
+      if (!err.response) {
+        toast.error("Server is starting, please try again in a few seconds");
+        return;
+      }
     }
 
     toast.error("Server error. Try again shortly.");

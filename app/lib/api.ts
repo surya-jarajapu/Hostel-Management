@@ -39,23 +39,24 @@ api.interceptors.request.use(
 // 🚨 Global response handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // ⛔ Network / server down / cold start
-    if (!error.response) {
-      console.error("Network error or server waking up");
-      return Promise.reject(error);
+  async (error) => {
+    const config = error.config;
+
+    // 🟡 Cold start / network issue → retry once
+    if (!error.response && config && !config.__retry) {
+      config.__retry = true;
+
+      console.warn("Server waking up, retrying request...");
+      await new Promise((r) => setTimeout(r, 3000));
+
+      return api(config); // 🔁 retry original request
     }
 
-    const status = error.response.status;
-    const message =
-      error.response.data?.message || error.message || "Something went wrong";
-
-    console.error(`API Error ${status}:`, message);
-
-    // 🔐 Token expired / invalid
-    if (status === 401) {
+    // 🔐 Token expired
+    if (error.response?.status === 401) {
       localStorage.removeItem("token");
-      window.location.href = "/login"; // ✅ MUST redirect
+      window.location.href = "/login";
+      return;
     }
 
     return Promise.reject(error);

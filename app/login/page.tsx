@@ -7,7 +7,6 @@ import api from "../lib/api";
 import type { AxiosError } from "axios";
 import toast from "react-hot-toast";
 import axios from "axios";
-console.log("API BASE URL:", process.env.NEXT_PUBLIC_API_URL);
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,51 +16,53 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError("");
 
-    let loadingToastId: string | undefined;
+async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  setError("");
 
-    try {
-      // 🔐 Login
-      const res = await api.post("/auth/login", { email, password });
-      const { token, masterUser } = res.data.data;
+  let loadingToastId: string | undefined;
 
-      login(token, masterUser);
+  try {
+    // 🔐 Login
+    const res = await api.post("/auth/login", { email, password });
+    const { token, masterUser } = res.data.data;
 
-      // 🟡 Show gentle loading while server/DB wakes
-      loadingToastId = toast.loading(
-        "Starting server… this may take a few seconds on first load."
-      );
+    login(token, masterUser);
 
-      // 🔥 Wake DB + validate token (Axios adds Authorization automatically)
-      await api.get("/auth/me");
+    // 🟡 Show gentle loading while server/DB wakes
+    loadingToastId = toast.loading(
+      "Starting server… this may take a few seconds on first load."
+    );
 
-      toast.dismiss(loadingToastId);
-      toast.success("Login successful");
+    // 🔥 Wake DB + validate token (Axios adds Authorization automatically)
+    await api.get("/auth/me");
 
-      router.replace(
-        masterUser.role === "ADMIN" ? "/dashboard/admin" : "/dashboard"
-      );
-    } catch (err) {
-      if (loadingToastId) toast.dismiss(loadingToastId);
+    toast.dismiss(loadingToastId);
+    toast.success("Login successful");
 
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 401) {
-          toast.error("Invalid credentials");
-          return;
-        }
+    router.replace(
+      masterUser.role === "ADMIN" ? "/dashboard/admin" : "/dashboard"
+    );
+  } catch (err) {
+    if (loadingToastId) toast.dismiss(loadingToastId);
 
-        if (!err.response) {
-          toast.error("Server is starting, please try again in a few seconds");
-          return;
-        }
+    if (axios.isAxiosError(err)) {
+      if (err.response?.status === 401) {
+        toast.error("Invalid credentials");
+        return;
       }
 
-      toast.error("Server error. Try again shortly.");
+      if (!err.response) {
+        toast.error("Server is starting, please try again in a few seconds");
+        return;
+      }
     }
+
+    toast.error("Server error. Try again shortly.");
   }
+}
+
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">

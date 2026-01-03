@@ -11,6 +11,15 @@ import axios from "axios";
 //   },
 // });
 
+// const api = axios.create({
+//   baseURL: "https://hostle-management-backend.onrender.com/api",
+//   timeout: 10000,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
+
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 
 if (!baseURL && typeof window !== "undefined") {
@@ -24,6 +33,8 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+console.log(process.env.NEXT_PUBLIC_API_URL);
 
 // 🔐 Attach JWT token
 api.interceptors.request.use(

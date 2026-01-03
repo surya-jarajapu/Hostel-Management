@@ -19,14 +19,14 @@ export default function UserFormModal({
   setForm: React.Dispatch<React.SetStateAction<UserForm>>;
   errors: Partial<Record<keyof UserForm, string>>;
   saving: boolean;
-  editingUser: any;
+  editingUser: User | null; // ✅ FIXED
   rooms: Room[];
   saveUser: () => void;
 }) {
   if (!open) return null;
 
   const basicFields: Array<{
-    key: keyof UserForm;
+    key: InputFieldKey;
     label: string;
     placeholder: string;
   }> = [

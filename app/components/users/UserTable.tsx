@@ -4,13 +4,12 @@ import Image from "next/image";
 export default function UserTable({
   users,
   loading,
-  amount,
   openDeleteModal,
   openEditModal,
   openCollectModal,
   getFeeStatus,
   setReceiptPreview,
-}: any) {
+}: UserTableProps) {
   return (
     <div className="hidden md:block rounded-3xl bg-white/40 backdrop-blur-xl border border-white/30 shadow p-4">
       {loading ? (
@@ -66,7 +65,7 @@ export default function UserTable({
                       quality={90}
                       className="rounded object-contain cursor-pointer"
                       onClick={() =>
-                        setReceiptPreview(u.user_fee_receipt ?? null)
+                        setReceiptPreview(u.user_fee_receipt as string)
                       }
                     />
                   ) : (

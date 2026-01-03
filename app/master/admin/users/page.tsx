@@ -27,7 +27,6 @@ export default function AdminUsersPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
 
   // Selection
-  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteUserData, setDeleteUserData] = useState<User | null>(null);
 
@@ -40,6 +39,8 @@ export default function AdminUsersPage() {
   const [amount, setAmount] = useState<number | "">("");
 
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
 
   // 🔹 Collect Fee receipt states
   const [collectPreview, setCollectPreview] = useState<string>("");
@@ -464,10 +465,9 @@ export default function AdminUsersPage() {
       <UserTable
         users={users}
         loading={loading}
-        amount={amount}
         openDeleteModal={openDeleteModal}
         openEditModal={openEditModal}
-        openCollectModal={openCollectModal} // 🔥 THIS LINE
+        openCollectModal={openCollectModal}
         getFeeStatus={getFeeStatus}
         setReceiptPreview={setReceiptPreview}
       />

@@ -7,6 +7,9 @@ import Image from "next/image";
 import api from "@/app/lib/api";
 
 import { getSupabase } from "@/app/lib/supabaseClient";
+import UserFormModal from "@/app/components/users/UserFormModal";
+import UserTable from "@/app/components/users/UserTable";
+import UserHeader from "@/app/components/users/UserHeader";
 
 export default function AdminUsersPage() {
   // UI state
@@ -68,12 +71,6 @@ export default function AdminUsersPage() {
     room?: Room;
   };
 
-  // type BackendResponse<T> = {
-  //   status: boolean;
-  //   message?: string;
-  //   data: T;
-  //   errors?: { field: string; message: string }[];
-  // };
 
   type UserForm = {
     user_name: string;
@@ -110,16 +107,6 @@ export default function AdminUsersPage() {
     user_fee_receipt_preview: "",
   });
 
-  const basicFields: Array<{
-    key: "user_name" | "email" | "mobile" | "monthly_fee";
-    label: string;
-  }> = [
-    { key: "user_name", label: "Name" },
-    { key: "email", label: "Email" },
-    { key: "mobile", label: "Mobile" },
-    { key: "monthly_fee", label: "Monthly Fee" },
-  ];
-
   // =========================
   // HELPERS
   // =========================
@@ -148,7 +135,6 @@ export default function AdminUsersPage() {
 
     return data.publicUrl;
   };
-
 
   // =========================
   // FETCH USERS
@@ -505,131 +491,24 @@ export default function AdminUsersPage() {
   return (
     <div className="min-h-screen bg-gray-100 pt-16 px-4 sm:px-6 pb-32 text-gray-800">
       {/* HEADER */}
-      <div className="mb-4">
-        {/* TITLE */}
-        <h1 className="text-lg sm:text-3xl font-semibold text-gray-900">
-          Hostel Users
-        </h1>
 
-        {/* SEARCH */}
-        <div className="mt-2 flex gap-2">
-          <input
-            className="
-        flex-1 rounded-xl
-        bg-white/60 backdrop-blur
-        border border-gray-200
-        px-4 py-2 text-sm
-        focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Search name / mobile / room"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <UserHeader
+        search={search}
+        setSearch={setSearch}
+        fetchUsers={fetchUsers}
+        setModalOpen={setModalOpen}
+      />
 
-          <button
-            onClick={() => fetchUsers(0)}
-            className="
-        rounded-xl
-        bg-gradient-to-br from-[#0a84ff] to-[#5ac8fa]
-        text-white px-4 py-2 text-sm
-        shadow
-      "
-          >
-            Search
-          </button>
-        </div>
-      </div>
-
-      {/* ================= DESKTOP TABLE ================= */}
-      <div className="hidden md:block rounded-3xl bg-white/40 backdrop-blur-xl border border-white/30 shadow p-4">
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="text-gray-700 border-b">
-              <tr>
-                <th>Name</th>
-                <th>Room</th>
-                <th>Floor</th>
-                <th>Mobile</th>
-                <th>Joining</th>
-                <th>Next Fee</th>
-                <th>Status</th>
-                <th>Delay</th>
-                <th>Fee ₹</th>
-                <th>Due ₹</th>
-                <th>Receipt</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.user_id} className="border-b last:border-0">
-                  <td>{u.user_name}</td>
-                  <td>{u.room?.room_number || "-"}</td>
-                  <td>{u.room?.floor_number || "-"}</td>
-                  <td>{u.mobile || "-"}</td>
-                  <td>
-                    {u.joining_date
-                      ? new Date(u.joining_date).toLocaleDateString()
-                      : "-"}
-                  </td>
-                  <td>
-                    {u.next_fee_date
-                      ? new Date(u.next_fee_date).toLocaleDateString()
-                      : "-"}
-                  </td>
-                  <td>{getFeeStatus(u)}</td>
-                  <td>{u.delay_days > 0 ? `${u.delay_days} days` : "-"}</td>
-                  <td>₹{u.monthly_fee}</td>
-                  <td>₹{u.due_amount}</td>
-
-                  <td className="text-center">
-                    {u.user_fee_receipt ? (
-                      <Image
-                        src={u.user_fee_receipt}
-                        alt="Receipt"
-                        width={48}
-                        height={48}
-                        quality={90}
-                        className="rounded object-contain cursor-pointer"
-                        onClick={() =>
-                          setReceiptPreview(u.user_fee_receipt ?? null)
-                        }
-                      />
-                    ) : (
-                      <span className="text-xs text-gray-400">No Img</span>
-                    )}
-                  </td>
-
-                  <td className="flex gap-2">
-                    <button
-                      onClick={() => openEditModal(u)}
-                      className="p-1 rounded bg-blue-50 text-blue-600"
-                    >
-                      ✏️
-                    </button>
-
-                    <button
-                      disabled={amount === "" || amount <= 0}
-                      className="disabled:opacity-50"
-                    >
-                      Collect
-                    </button>
-
-                    <button
-                      onClick={() => openDeleteModal(u)}
-                      className="p-1 rounded bg-red-50 text-red-600"
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <UserTable
+        users={users}
+        loading={loading}
+        amount={amount}
+        openDeleteModal={openDeleteModal}
+        openEditModal={openEditModal}
+        openCollectModal={openCollectModal} // 🔥 THIS LINE
+        getFeeStatus={getFeeStatus}
+        setReceiptPreview={setReceiptPreview}
+      />
 
       {/* ================= MOBILE CARDS ================= */}
       {/* MOBILE VIEW */}
@@ -748,283 +627,17 @@ export default function AdminUsersPage() {
         ))}
       </div>
 
-      {/* MODAL */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div
-            className="
-        w-full max-w-md max-h-[90vh]
-        rounded-3xl
-        bg-white/30 backdrop-blur-2xl
-        border border-white/30
-        shadow-[0_30px_70px_rgba(0,0,0,0.45)]
-        flex flex-col
-      "
-          >
-            {/* HEADER */}
-            <div className="px-6 py-5 border-b border-white/20 flex justify-between items-center">
-              <h3 className="text-lg font-semibold">
-                {editingUser ? "Edit User" : "Create User"}
-              </h3>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="text-white/70 hover:text-white text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* BODY (SCROLLABLE) */}
-            <div className="px-6 py-4 overflow-y-auto space-y-4 text-gray-900">
-              {/* BASIC FIELDS */}
-              {basicFields.map(({ key, label }) => (
-                <div key={key}>
-                  <input
-                    type={key === "monthly_fee" ? "number" : "text"}
-                    placeholder={label}
-                    className={`w-full rounded-xl px-4 py-3 text-sm
-        bg-white/50 backdrop-blur
-        border ${errors[key] ? "border-red-400" : "border-white/40"}
-        focus:outline-none focus:ring-2 focus:ring-blue-400`}
-                    value={form[key]}
-                    onChange={(e) =>
-                      setForm({ ...form, [key]: e.target.value })
-                    }
-                  />
-
-                  {errors[key] && (
-                    <p className="text-xs text-red-500 mt-1">{errors[key]}</p>
-                  )}
-                </div>
-              ))}
-
-              {/* PAYMENT TYPE (CREATE ONLY) */}
-              {!editingUser && (
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700">
-                    Payment Type
-                  </label>
-
-                  {/* SEGMENTED BUTTONS */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { label: "Later", value: "NONE" },
-                      { label: "Full", value: "FULL" },
-                      { label: "Partial", value: "PARTIAL" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() =>
-                          setForm((f) => ({
-                            ...f,
-                            payment_type: opt.value,
-                            paid_amount: opt.value === "PARTIAL" ? "" : "",
-                          }))
-                        }
-                        className={`
-            py-3 rounded-xl text-sm font-medium transition
-            ${
-              form.payment_type === opt.value
-                ? "bg-blue-500 text-white shadow"
-                : "bg-white/60 text-gray-800 border border-white/40"
-            }
-          `}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* PARTIAL AMOUNT */}
-                  {form.payment_type === "PARTIAL" && (
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="Paid Amount"
-                      className="
-          w-full rounded-xl px-4 py-3
-          bg-white/60 backdrop-blur
-          border border-white/40
-          focus:outline-none focus:ring-2 focus:ring-blue-400
-        "
-                      value={form.paid_amount || ""}
-                      onChange={(e) =>
-                        setForm({ ...form, paid_amount: e.target.value })
-                      }
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* RECEIPT UPLOAD */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-600">
-                  Fee Receipt <span className="text-gray-400">(optional)</span>
-                </label>
-
-                <label
-                  htmlFor="receipt-upload"
-                  className="
-      relative flex items-center justify-center
-      w-full h-9
-      rounded-xl
-      border border-dashed border-gray-300
-      bg-white/50 backdrop-blur
-      cursor-pointer
-      hover:border-blue-400
-      transition
-    "
-                >
-                  {!form.user_fee_receipt_preview ? (
-                    <div className="flex items-center gap-3 text-gray-500">
-                      <span className="text-lg">📷</span>
-                      <span className="text-sm">Upload receipt</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Image
-                        src={form.user_fee_receipt_preview}
-                        alt="Receipt preview"
-                        fill
-                        className="object-contain rounded-xl p-1"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setForm({
-                            ...form,
-                            user_fee_receipt_file: null,
-                            user_fee_receipt_preview: "",
-                          });
-                        }}
-                        className="
-            absolute top-1.5 right-1.5
-            bg-black/60 text-white
-            text-[10px] px-1.5 py-0.5
-            rounded-md
-          "
-                      >
-                        ✕
-                      </button>
-                    </>
-                  )}
-                </label>
-
-                <input
-                  id="receipt-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-
-                    if (!file.type.startsWith("image/")) {
-                      toast.error("Only image files allowed");
-                      return;
-                    }
-
-                    if (file.size > 2 * 1024 * 1024) {
-                      toast.error("Image must be under 2MB");
-                      return;
-                    }
-
-                    setForm({
-                      ...form,
-                      user_fee_receipt_file: file,
-                      user_fee_receipt_preview: URL.createObjectURL(file),
-                    });
-                  }}
-                />
-              </div>
-
-              {/* IMAGE PREVIEW (IMAGE ONLY) */}
-              {form.user_fee_receipt_preview && (
-                <div className="relative">
-                  <Image
-                    alt="Receipt image"
-                    src={form.user_fee_receipt_preview}
-                    width={36}
-                    height={40}
-                    className="w-full h-24 object-contain rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setForm({
-                        ...form,
-                        user_fee_receipt_file: null,
-                        user_fee_receipt_preview: "",
-                      })
-                    }
-                    className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-
-              {/* JOINING DATE */}
-              <input
-                type="date"
-                className="w-full rounded-md border px-3 py-2"
-                value={form.joining_date}
-                onChange={(e) =>
-                  setForm({ ...form, joining_date: e.target.value })
-                }
-              />
-
-              {/* ROOM */}
-              <select
-                className="w-full rounded-md border px-3 py-2 disabled:bg-gray-100"
-                value={form.room_id}
-                onChange={(e) => setForm({ ...form, room_id: e.target.value })}
-              >
-                <option value="">Select Room</option>
-
-                {rooms.map((r) => (
-                  <option
-                    key={r.room_id}
-                    value={r.room_id}
-                    disabled={r.available_beds === 0}
-                  >
-                    {r.room_number}
-                    {r.available_beds === 0
-                      ? " (Full)"
-                      : ` (${r.available_beds} beds)`}
-                    -{` [${r.floor_number} Floor]`}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* FOOTER */}
-            <div className="px-6 py-4 border-t border-white/20 flex justify-end gap-3">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="px-4 py-2 border rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveUser}
-                disabled={saving}
-                className="
-  px-5 py-2 rounded-xl
-  bg-gradient-to-br from-green-500 to-emerald-500
-  text-white
-  disabled:opacity-50
-"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <UserFormModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        form={form}
+        setForm={setForm}
+        errors={errors}
+        saving={saving}
+        editingUser={editingUser}
+        rooms={rooms}
+        saveUser={saveUser}
+      />
 
       {/* COLLECT FEE MODAL */}
       {collectOpen && selectedUser && (

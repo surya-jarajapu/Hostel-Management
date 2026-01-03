@@ -19,7 +19,6 @@ import axios from "axios";
 //   },
 // });
 
-
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 
 if (!baseURL && typeof window !== "undefined") {
@@ -33,8 +32,6 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
-
-console.log(process.env.NEXT_PUBLIC_API_URL);
 
 // 🔐 Attach JWT token
 api.interceptors.request.use(

@@ -11,16 +11,19 @@ import axios from "axios";
 //   },
 // });
 
+const baseURL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!baseURL && typeof window !== "undefined") {
+  throw new Error("NEXT_PUBLIC_API_URL is not defined");
+}
+
 const api = axios.create({
-  baseURL: "https://hostle-management-backend.onrender.com/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
-
-
-console.log(process.env.NEXT_PUBLIC_API_URL);
 
 // 🔐 Attach JWT token
 api.interceptors.request.use(

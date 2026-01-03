@@ -3,13 +3,7 @@
 import { useEffect, useRef, useState, ReactNode, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
-import {
-  Users,
-  BedDouble,
-  LayoutDashboard,
-  LogOut,
-  UserCircle,
-} from "lucide-react";
+import { Users, BedDouble, LayoutDashboard, LogOut } from "lucide-react";
 
 /* ================= TYPES ================= */
 
@@ -117,9 +111,9 @@ export default function Navbar() {
               {masterName?.[0]?.toUpperCase()}
             </button>
 
-       {profileOpen && (
-  <div
-    className="
+            {profileOpen && (
+              <div
+                className="
       absolute right-0 top-11
       w-48
       rounded-2xl
@@ -129,31 +123,29 @@ export default function Navbar() {
       overflow-hidden
       text-gray-800
     "
-  >
-    {/* PROFILE INFO */}
-    <div className="px-4 py-4 space-y-2 text-sm">
-      <div className="flex justify-between">
-        <span className="text-gray-500">Name :</span>
-        <span className="font-medium truncate max-w-[140px] text-right">
-          {masterName}
-        </span>
-      </div>
+              >
+                {/* PROFILE INFO */}
+                <div className="px-4 py-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Name :</span>
+                    <span className="font-medium truncate max-w-[140px] text-right">
+                      {masterName}
+                    </span>
+                  </div>
 
-      <div className="flex justify-between">
-        <span className="text-gray-500">Role :</span>
-        <span className="font-medium text-blue-600">
-          {role}
-        </span>
-      </div>
-    </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Role :</span>
+                    <span className="font-medium text-blue-600">{role}</span>
+                  </div>
+                </div>
 
-    {/* DIVIDER */}
-    <div className="h-px bg-gray-300" />
+                {/* DIVIDER */}
+                <div className="h-px bg-gray-300" />
 
-    {/* LOGOUT */}
-    <button
-      onClick={logout}
-      className="
+                {/* LOGOUT */}
+                <button
+                  onClick={logout}
+                  className="
         w-full px-4 py-3
         flex items-center gap-3
         text-sm font-medium
@@ -161,13 +153,12 @@ export default function Navbar() {
         hover:bg-red-200/40
         transition
       "
-    >
-      <LogOut size={16} />
-      Logout
-    </button>
-  </div>
-)}
-
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>

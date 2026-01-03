@@ -3,7 +3,8 @@ export default function UserHeader({
   search,
   setSearch,
   fetchUsers,
-}: any) {
+}: UserHeaderProps) {
+
   return (
     <div className="mb-4">
       {/* TITLE */}
@@ -26,7 +27,7 @@ export default function UserHeader({
         />
 
         <button
-          onClick={() => fetchUsers(0)}
+          onClick={() => fetchUsers()}
           className="
         rounded-xl
         bg-gradient-to-br from-[#0a84ff] to-[#5ac8fa]

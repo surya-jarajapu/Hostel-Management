@@ -48,3 +48,10 @@
   getFeeStatus: (user: User) => string;
   setReceiptPreview: (url: string) => void;
 };
+
+
+type UserHeaderProps = {
+  search: string;
+  setSearch: React.Dispatch<React.SetStateAction<string>>;
+  fetchUsers: () => void;
+};

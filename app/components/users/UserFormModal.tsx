@@ -12,10 +12,24 @@ export default function UserFormModal({
   editingUser,
   rooms,
   saveUser,
-}: any) {
+}: {
+  open: boolean;
+  onClose: () => void;
+  form: UserForm;
+  setForm: React.Dispatch<React.SetStateAction<UserForm>>;
+  errors: Partial<Record<keyof UserForm, string>>;
+  saving: boolean;
+  editingUser: any;
+  rooms: Room[];
+  saveUser: () => void;
+}) {
   if (!open) return null;
 
-  const basicFields = [
+  const basicFields: Array<{
+    key: keyof UserForm;
+    label: string;
+    placeholder: string;
+  }> = [
     {
       key: "user_name",
       label: "Full Name",
@@ -76,11 +90,19 @@ export default function UserFormModal({
                 type={key === "monthly_fee" ? "number" : "text"}
                 placeholder={placeholder}
                 className={`w-full rounded-xl px-4 py-2.5 text-sm
-        bg-white/50 backdrop-blur
-        border ${errors[key] ? "border-red-400" : "border-white/40"}
-        focus:outline-none focus:ring-2 focus:ring-blue-400`}
+    bg-white/50 backdrop-blur
+    border ${errors[key] ? "border-red-400" : "border-white/40"}
+    focus:outline-none focus:ring-2 focus:ring-blue-400`}
                 value={form[key]}
-                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    [key]:
+                      key === "monthly_fee"
+                        ? e.target.value // keep string (your UserForm defines string)
+                        : e.target.value,
+                  }))
+                }
               />
 
               {errors[key] && (
@@ -107,7 +129,7 @@ export default function UserFormModal({
                     key={opt.value}
                     type="button"
                     onClick={() =>
-                      setForm((f: any) => ({
+                      setForm((f: UserForm) => ({
                         ...f,
                         payment_type: opt.value,
                         paid_amount: opt.value === "PARTIAL" ? "" : "",
@@ -289,7 +311,7 @@ export default function UserFormModal({
               onChange={(e) => setForm({ ...form, room_id: e.target.value })}
             >
               <option value="">Select Room</option>
-              {rooms.map((r: any) => (
+              {rooms.map((r: Room) => (
                 <option
                   key={r.room_id}
                   value={r.room_id}

@@ -35,7 +35,7 @@ export default function UserTable({
           </thead>
 
           <tbody>
-            {users.map((u: any) => (
+            {users.map((u: User) => (
               <tr key={u.user_id} className="border-b last:border-0">
                 <td>{u.user_name}</td>
                 <td>{u.room?.room_number || "-"}</td>

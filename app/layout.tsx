@@ -1,28 +1,26 @@
 // app/layout.tsx
-"use client";
-
-import { usePathname } from "next/navigation";
-import { Toaster } from "react-hot-toast";
-import Navbar from "./components/Navbar";
 import "./globals.css";
-import { AuthProvider } from "./context/AuthContext";
+import Providers from "./providers";
+
+export const metadata = {
+  title: "Hostel Management",
+  description: "Secure login to manage users & rooms",
+  manifest: "/manifest.json",
+};
+
+export const viewport = {
+  themeColor: "#0a84ff",
+};
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const hideNavbar = pathname === "/login";
-
   return (
     <html lang="en">
       <body>
-        <Toaster />
-        <AuthProvider>
-          {!hideNavbar && <Navbar />}
-          {children}
-        </AuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

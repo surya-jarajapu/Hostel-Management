@@ -5,13 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import api from "@/app/lib/api";
-
 import { getSupabase } from "@/app/lib/supabaseClient";
 import UserFormModal from "@/app/components/users/UserFormModal";
 import UserTable from "@/app/components/users/UserTable";
 import UserHeader from "@/app/components/users/UserHeader";
 
+
 export default function AdminUsersPage() {
+  
   // UI state
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -40,7 +41,6 @@ export default function AdminUsersPage() {
 
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-
 
   // 🔹 Collect Fee receipt states
   const [collectPreview, setCollectPreview] = useState<string>("");

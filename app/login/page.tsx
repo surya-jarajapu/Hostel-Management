@@ -7,8 +7,10 @@ import api from "../lib/api";
 import type { AxiosError } from "axios";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { usePWAInstall } from "../hooks/usePWAInstall";
 
 export default function LoginPage() {
+  const { canInstall, install } = usePWAInstall();
   const router = useRouter();
   const { login } = useAuth();
 
@@ -16,63 +18,56 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
 
-async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault();
-  setError("");
+    let loadingToastId: string | undefined;
 
-  let loadingToastId: string | undefined;
+    try {
+      // 🔐 Login
+      const res = await api.post("/auth/login", { email, password });
+      const { token, masterUser } = res.data.data;
 
-  try {
-    // 🔐 Login
-    const res = await api.post("/auth/login", { email, password });
-    const { token, masterUser } = res.data.data;
+      login(token, masterUser);
 
-    login(token, masterUser);
+      // 🟡 Show gentle loading while server/DB wakes
+      loadingToastId = toast.loading(
+        "Starting server… this may take a few seconds on first load."
+      );
 
-    // 🟡 Show gentle loading while server/DB wakes
-    loadingToastId = toast.loading(
-      "Starting server… this may take a few seconds on first load."
-    );
+      // 🔥 Wake DB + validate token (Axios adds Authorization automatically)
+      await api.get("/auth/me");
 
-    // 🔥 Wake DB + validate token (Axios adds Authorization automatically)
-    await api.get("/auth/me");
+      toast.dismiss(loadingToastId);
+      toast.success("Login successful");
 
-    toast.dismiss(loadingToastId);
-    toast.success("Login successful");
+      router.replace(
+        masterUser.role === "ADMIN" ? "/dashboard/admin" : "/dashboard"
+      );
+    } catch (err) {
+      if (loadingToastId) toast.dismiss(loadingToastId);
 
-    router.replace(
-      masterUser.role === "ADMIN" ? "/dashboard/admin" : "/dashboard"
-    );
-  } catch (err) {
-    if (loadingToastId) toast.dismiss(loadingToastId);
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          toast.error("Invalid credentials");
+          return;
+        }
 
-    if (axios.isAxiosError(err)) {
-      if (err.response?.status === 401) {
-        toast.error("Invalid credentials");
-        return;
+        if (!err.response) {
+          toast.error("Server is starting, please try again in a few seconds");
+          return;
+        }
       }
 
-      if (!err.response) {
-        toast.error("Server is starting, please try again in a few seconds");
-        return;
-      }
+      toast.error("Server error. Try again shortly.");
     }
-
-    toast.error("Server error. Try again shortly.");
   }
-}
-
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* ===== Background Image ===== */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: "url('/images/hostel-bg.jpg')",
-        }}
-      />
+      <div className="absolute inset-0 bg-cover bg-center" />
 
       {/* ===== Dark Overlay ===== */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
@@ -99,6 +94,22 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
             <p className="text-white/80 text-sm lg:text-base mt-2">
               Secure login to manage users & rooms
             </p>
+
+            {canInstall && (
+              <button
+                onClick={install}
+                className="
+            px-4 py-2
+            rounded-lg
+            bg-blue-600
+            text-white
+            text-sm font-medium
+            hover:bg-blue-700
+          "
+              >
+                Install App
+              </button>
+            )}
           </div>
 
           {/* Form */}

@@ -86,30 +86,30 @@ export default function LoginPage() {
             p-6 sm:p-8 lg:p-10
           "
         >
+     
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl lg:text-3xl font-semibold text-white">
-              Hostel Management
-            </h1>
-            <p className="text-white/80 text-sm lg:text-base mt-2">
-              Secure login to manage users & rooms
-            </p>
-
-            {canInstall && (
-              <button
-                onClick={install}
-                className="
-            px-4 py-2
+          <div className="text-center">
+                 {canInstall && (
+            <button
+              onClick={install}
+              className="
+            px-4 py-2 text-center
             rounded-lg
             bg-blue-600
             text-white
             text-sm font-medium
             hover:bg-blue-700
           "
-              >
-                Install App
-              </button>
-            )}
+            >
+              Install app
+            </button>
+          )}
+            <h1 className="text-2xl lg:text-3xl font-semibold text-white mt-2">
+              Hostel Management
+            </h1>
+            <p className="text-white/80 text-sm lg:text-base mt-2">
+              Secure login to manage users & rooms
+            </p>
           </div>
 
           {/* Form */}

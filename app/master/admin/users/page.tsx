@@ -10,9 +10,7 @@ import UserFormModal from "@/app/components/users/UserFormModal";
 import UserTable from "@/app/components/users/UserTable";
 import UserHeader from "@/app/components/users/UserHeader";
 
-
 export default function AdminUsersPage() {
-  
   // UI state
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -206,13 +204,56 @@ export default function AdminUsersPage() {
   }, [collectOpen]);
 
   const getFeeStatus = useCallback((u: User) => {
-    if (u.due_amount === 0) return "🟢 Paid";
+    if (u.due_amount === 0) return "PAID";
     const overdue = u.next_fee_date && new Date(u.next_fee_date) < new Date();
-    if (overdue && u.due_amount < u.monthly_fee) return "🔴 Overdue (Partial)";
-    if (overdue) return "🔴 Overdue";
-    if (u.due_amount < u.monthly_fee) return "🟡 Partial";
-    return "🟡 Due";
+    if (overdue && u.due_amount < u.monthly_fee) return "OVERDUE_PARTIAL";
+    if (overdue) return "OVERDUE";
+    if (u.due_amount < u.monthly_fee) return "PARTIAL";
+
+    return "DUE";
   }, []);
+
+  function FeeStatusBadge({ status }: { status: string }) {
+    const map: Record<string, { label: string; className: string }> = {
+      PAID: {
+        label: "Paid",
+        className: "bg-green-100 text-green-700",
+      },
+      PARTIAL: {
+        label: "Partial",
+        className: "bg-yellow-100 text-yellow-700",
+      },
+      DUE: {
+        label: "Due",
+        className: "bg-orange-100 text-orange-700",
+      },
+      OVERDUE: {
+        label: "Overdue",
+        className: "bg-red-100 text-red-700",
+      },
+      OVERDUE_PARTIAL: {
+        label: "Overdue (Partial)",
+        className: "bg-red-100 text-red-700",
+      },
+    };
+
+    const item = map[status];
+
+    return (
+      <span
+        className={`
+        inline-flex items-center
+        px-3 py-1
+        rounded-full
+        text-[11px]
+        font-medium
+        ${item.className}
+      `}
+      >
+        {item.label}
+      </span>
+    );
+  }
 
   // =========================
   // MODAL HANDLERS
@@ -479,7 +520,7 @@ export default function AdminUsersPage() {
           <div
             key={u.user_id}
             className="
-        rounded-2xl
+        rounded-lg
         bg-white/60 backdrop-blur-xl
         border border-white/30
         shadow
@@ -492,7 +533,10 @@ export default function AdminUsersPage() {
                 Name : {u.user_name}
               </div>
 
-              <span className="text-xs font-medium">{getFeeStatus(u)}</span>
+              {/* <span className="text-xs font-medium">{getFeeStatus(u)}</span> */}
+              <span>
+                <FeeStatusBadge status={getFeeStatus(u)} />
+              </span>
             </div>
 
             {/* ROW 2 – GRID */}
@@ -548,12 +592,11 @@ export default function AdminUsersPage() {
             </div>
 
             {/* ACTIONS */}
-            {/* ACTIONS */}
             <div className="mt-4 flex gap-2">
               <button
                 onClick={() => openEditModal(u)}
                 className="
-      flex-1 py-2 rounded-xl
+      flex-1 py-2 rounded-lg
       bg-blue-500/20 text-blue-700
       text-sm font-medium
     "
@@ -565,7 +608,7 @@ export default function AdminUsersPage() {
                 <button
                   onClick={() => openCollectModal(u)}
                   className="
-        flex-1 py-2 rounded-xl
+        flex-1 py-2 rounded-lg
         bg-green-500/20 text-green-700
         text-sm font-medium
       "
@@ -577,7 +620,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => openDeleteModal(u)}
                 className="
-      flex-1 py-2 rounded-xl
+      flex-1 py-2 rounded-lg
       bg-red-500/20 text-red-700
       text-sm font-medium
     "

@@ -41,23 +41,80 @@ type DashboardStats = {
   pending_list: number;
 };
 
-type StatCardProps = {
+type ModalType = "PARTIAL" | "OVERDUE" | "BEDS" | "PENDING" | null;
+
+/* ================= SMALL TOP CARD ================= */
+
+function StatMini({
+  title,
+  value,
+  icon,
+}: {
   title: string;
   value: string | number;
   icon: ReactNode;
-  gradient: string;
-  onClick?: () => void;
-};
+}) {
+  return (
+    <div className="flex items-center gap-3 bg-white/20 rounded-xl px-4 py-3">
+      <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center">
+        {icon}
+      </div>
+      <div>
+        <div className="text-xs text-white/80">{title}</div>
+        <div className="text-lg font-semibold">{value}</div>
+      </div>
+    </div>
+  );
+}
 
+/* ================= ACTION CARD ================= */
 
-type ModalType = "PARTIAL" | "OVERDUE" | "BEDS" | "PENDING" | null;
+function ActionCard({
+  title,
+  value,
+  icon,
+  onClick,
+}: {
+  title: string;
+  value: string | number;
+  icon: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className="cursor-pointer bg-white rounded-lg p-4 text-center shadow hover:shadow-lg transition"
+    >
+
+            {/* ICON WRAPPER */}
+      <div className="flex justify-center mb-2">
+        <div
+          className="
+            w-10 h-10
+            rounded-full
+         bg-purple-100 text-purple-700 
+            flex items-center justify-center
+          "
+        >
+          {/* ICON FIX */}
+          <span className="flex items-center justify-center">
+            {icon}
+          </span>
+        </div>
+      </div>
+
+      <div className="text-sm font-medium text-gray-700">{title}</div>
+      <div className="text-lg font-semibold text-gray-900">{value}</div>
+    </div>
+  );
+}
 
 /* ================= PAGE ================= */
 
 export default function AdminDashboardPage() {
-  const [loading, setLoading] = useState(true);
   const [modalType, setModalType] = useState<ModalType>(null);
   const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [stats, setStats] = useState<DashboardStats>({
     total_users: 0,
@@ -68,138 +125,108 @@ export default function AdminDashboardPage() {
     pending_list: 0,
   });
 
+  useEffect(() => {
+    if (loaded) return;
 
-
- useEffect(() => {
-  if (loaded) return;
-
-  api.get("/admin/dashboard")
-    .then((res) => {
-      setStats(res.data.data);
-      setLoaded(true);
-    })
-    .catch(() => {
-      // fail-safe to prevent crash
-      setStats({
-        total_users: 0,
-        partial_users: 0,
-        overdue_users: 0,
-        available_beds: 0,
-        collected_this_month: 0,
-        pending_list: 0,
-      });
-    })
-    .finally(() => {
-      setLoading(false);
-    });
-}, [loaded]);
-
+    api
+      .get("/admin/dashboard")
+      .then((res) => {
+        setStats(res.data.data);
+        setLoaded(true);
+      })
+      .catch(() => {
+        setStats({
+          total_users: 0,
+          partial_users: 0,
+          overdue_users: 0,
+          available_beds: 0,
+          collected_this_month: 0,
+          pending_list: 0,
+        });
+      })
+      .finally(() => setLoading(false));
+  }, [loaded]);
 
   return (
-    <div className="min-h-screen bg-gray-100 pt-16 px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-100 pt-14 px-2 sm:px-6">
       {/* HEADER */}
-      <div className="mb-1">
-        <h1 className="text-lg font-semibold text-gray-900">
-          Admin Dashboard
-        </h1>
-      </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+        Admin Dashboard
+      </h3>
 
-      {/* CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-<StatCard
-  title="Total Users"
-  value={loading ? "—" : stats?.total_users ?? 0}
-  icon={<Users size={18} />}
-  gradient="from-blue-600 to-cyan-400"
-/>
+      {/* ================= TOP EXPLANATION ================= */}
+      <div className="mb-6">
+        <div className="bg-gradient-to-br from-purple-200 to-indigo-400 rounded-lg p-4 text-gray-800 shadow-lg">
+          <div className="text-sm font-bold">
+            Hostel Management Overview
+          </div>
 
-<StatCard
-  title="Partial Users"
-  value={loading ? "—" : stats.partial_users}
-  icon={<CircleDollarSign size={18} />}
-  gradient="from-yellow-500 to-orange-400"
-  onClick={() => setModalType("PARTIAL")}
-/>
+         <div className="grid grid-cols-2 sm:gap-2 gap-2 mt-2">
+            <StatMini
+              title="Total Users"
+              value={loading ? "—" : stats.total_users}
+              icon={<Users size={20} />}
+            />
 
-<StatCard
-  title="Overdue Users"
-  value={loading ? "—" : stats.overdue_users}
-  icon={<AlarmClock size={18} />}
-  gradient="from-red-500 to-pink-500"
-  onClick={() => setModalType("OVERDUE")}
-/>
-
-<StatCard
-  title="Beds Available"
-  value={loading ? "—" : stats.available_beds}
-  icon={<BedDouble size={18} />}
-  gradient="from-emerald-500 to-teal-400"
-  onClick={() => setModalType("BEDS")}
-/>
-
-<StatCard
-  title="Collected This Month"
-  value={loading ? "—" : `₹ ${stats.collected_this_month}`}
-  icon={<IndianRupee size={18} />}
-  gradient="from-purple-500 to-indigo-500"
-/>
-
-<StatCard
-  title="Pending List"
-  value={loading ? "—" : stats.pending_list}
-  icon={<NotepadTextDashedIcon size={18} />}
-  gradient="from-purple-500 to-indigo-500"
-  onClick={() => setModalType("PENDING")}
-/>
-
-      </div>
-
-      {modalType && <DashboardModal type={modalType} onClose={() => setModalType(null)} />}
-    </div>
-  );
-}
-
-/* ================= CARD ================= */
-
-function StatCard({
-  title,
-  value,
-  icon,
-  gradient,
-  onClick,
-}: StatCardProps) {
-  return (
-    <div
-      onClick={onClick}
-      className={`
-        rounded-2xl
-        px-4 py-3
-        text-white
-        bg-gradient-to-br ${gradient}
-        border border-white/30
-        shadow-[0_14px_30px_rgba(0,0,0,0.28)]
-        ${onClick ? "cursor-pointer hover:scale-[1.02] transition" : ""}
-      `}
-    >
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-xs text-white/80">{title}</span>
-
-        <div className="w-8 h-8 rounded-lg bg-white/25 flex items-center justify-center">
-          {icon}
+            <StatMini
+              title="Collected This Month"
+              value={loading ? "—" : `₹ ${stats.collected_this_month}`}
+              icon={<IndianRupee size={20} />}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="text-2xl font-semibold leading-tight">
-        {value}
-      </div>
+{/* ================= ACTION CARDS ================= */}
+<div className="grid grid-cols-4 gap-2 sm:gap-4 mt-3">
+  <ActionCard
+    title="Overdue"
+    value={loading ? "—" : stats.overdue_users}
+    icon={<AlarmClock />}
+    onClick={() => setModalType("OVERDUE")}
+  />
+
+  <ActionCard
+    title="Partial"
+    value={loading ? "—" : stats.partial_users}
+    icon={<CircleDollarSign />}
+    onClick={() => setModalType("PARTIAL")}
+  />
+
+  <ActionCard
+    title="Beds"
+    value={loading ? "—" : stats.available_beds}
+    icon={<BedDouble />}
+    onClick={() => setModalType("BEDS")}
+  />
+
+  <ActionCard
+    title="Pending"
+    value={loading ? "—" : stats.pending_list}
+    icon={<NotepadTextDashedIcon />}
+    onClick={() => setModalType("PENDING")}
+  />
+</div>
+
+      {modalType && (
+        <DashboardModal
+          type={modalType}
+          onClose={() => setModalType(null)}
+        />
+      )}
     </div>
   );
 }
 
-
 /* ================= MODAL ================= */
 
-function DashboardModal({ type, onClose }: { type: ModalType; onClose: () => void }) {
+function DashboardModal({
+  type,
+  onClose,
+}: {
+  type: ModalType;
+  onClose: () => void;
+}) {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [beds, setBeds] = useState<BedRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,16 +244,19 @@ function DashboardModal({ type, onClose }: { type: ModalType; onClose: () => voi
       setLoading(false);
       return;
     }
+
     if (type === "PARTIAL" && partialCache.current.length) {
       setUsers(partialCache.current);
       setLoading(false);
       return;
     }
+
     if (type === "OVERDUE" && overdueCache.current.length) {
       setUsers(overdueCache.current);
       setLoading(false);
       return;
     }
+
     if (type === "PENDING" && pendingCache.current.length) {
       setUsers(pendingCache.current);
       setLoading(false);
@@ -244,44 +274,41 @@ function DashboardModal({ type, onClose }: { type: ModalType; onClose: () => voi
 
     api.get(endpoint).then((res) => {
       const data = res.data.data ?? [];
+
       if (type === "BEDS") {
         bedsCache.current = data;
         setBeds(data);
-      } else if (type === "PARTIAL") {
-        partialCache.current = data;
-        setUsers(data);
-      } else if (type === "OVERDUE") {
-        overdueCache.current = data;
-        setUsers(data);
       } else {
-        pendingCache.current = data;
+        if (type === "PARTIAL") partialCache.current = data;
+        if (type === "OVERDUE") overdueCache.current = data;
+        if (type === "PENDING") pendingCache.current = data;
         setUsers(data);
       }
+
       setLoading(false);
     });
   }, [type]);
 
-  /* APPROVE PAYMENT */
   const approve = async (user_id: string) => {
     await api.post(`/admin/dashboard/users/${user_id}/approve-fee`);
-    pendingCache.current = pendingCache.current.filter((u) => u.user_id !== user_id);
+    pendingCache.current = pendingCache.current.filter(
+      (u) => u.user_id !== user_id
+    );
     setUsers([...pendingCache.current]);
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
       <div className="w-full max-w-4xl max-h-[85vh] bg-white/20 backdrop-blur-xl rounded-3xl flex flex-col text-white">
-        {/* HEADER */}
         <div className="p-5 flex justify-between border-b border-white/20">
           <h3 className="font-semibold">
-            {type === "PENDING" ? "Pending Payment Approvals" : `${type} LIST`}
+            {type === "PENDING" ? "Pending Payment Approvals" : `${type} List`}
           </h3>
           <button onClick={onClose}>✕</button>
         </div>
 
-        {/* BODY */}
         <div className="flex-1 overflow-y-auto p-5">
-          {loading && <div className="text-center text-white/70">Loading…</div>}
+          {loading && <div className="text-center">Loading…</div>}
 
           {!loading && type === "BEDS" &&
             beds.map((r) => (
@@ -290,31 +317,33 @@ function DashboardModal({ type, onClose }: { type: ModalType; onClose: () => voi
               </div>
             ))}
 
-          {!loading && type !== "BEDS" && users.map((u) => (
-            <div key={u.user_id} className="p-3 bg-white/20 rounded mb-2">
-              <div className="font-medium">{u.user_name}</div>
-              <div className="text-sm text-white/70">
-                Room {u.room?.room_number} · Floor {u.room?.floor_number}
+          {!loading && type !== "BEDS" &&
+            users.map((u) => (
+              <div key={u.user_id} className="p-3 bg-white/20 rounded mb-2">
+                <div className="font-medium">{u.user_name}</div>
+                <div className="text-sm text-white/70">
+                  Room {u.room?.room_number} · Floor {u.room?.floor_number}
+                </div>
+                <div className="text-yellow-200">Due ₹ {u.due_amount}</div>
+
+                {type === "OVERDUE" && (
+                  <div className="text-red-300">
+                    Delay: {u.delay_days} days
+                  </div>
+                )}
+
+                {type === "PENDING" && (
+                  <button
+                    onClick={() => approve(u.user_id)}
+                    className="mt-2 px-3 py-1 rounded bg-green-500 text-sm"
+                  >
+                    Approve
+                  </button>
+                )}
               </div>
-              <div className="text-yellow-200">Due ₹ {u.due_amount}</div>
-
-              {type === "OVERDUE" && (
-                <div className="text-red-300">Delay: {u.delay_days} days</div>
-              )}
-
-              {type === "PENDING" && (
-                <button
-                  onClick={() => approve(u.user_id)}
-                  className="mt-2 px-3 py-1 rounded bg-green-500 text-sm"
-                >
-                  Approve
-                </button>
-              )}
-            </div>
-          ))}
+            ))}
         </div>
       </div>
     </div>
   );
 }
-

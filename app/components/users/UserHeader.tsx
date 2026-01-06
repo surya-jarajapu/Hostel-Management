@@ -8,15 +8,15 @@ export default function UserHeader({
   return (
     <div className="mb-4">
       {/* TITLE */}
-      <h1 className="text-lg sm:text-3xl font-semibold text-gray-900">
+      <h4 className="text-lg sm:text-1xl font-semibold text-gray-900">
         Hostel Users
-      </h1>
+      </h4>
 
       {/* SEARCH */}
       <div className="mt-2 flex gap-2">
         <input
           className="
-        flex-1 rounded-xl
+        flex-1 rounded-lg
         bg-white/60 backdrop-blur
         border border-gray-200
         px-4 py-2 text-sm
@@ -29,7 +29,7 @@ export default function UserHeader({
         <button
           onClick={() => fetchUsers()}
           className="
-        rounded-xl
+        rounded-lg
         bg-gradient-to-br from-[#0a84ff] to-[#5ac8fa]
         text-white px-4 py-2 text-sm
         shadow

@@ -188,7 +188,7 @@ export default function AdminRoomsPage() {
         {rooms.map((r) => (
           <div
             key={r.room_id}
-            className="rounded-3xl bg-white/40 backdrop-blur-xl border border-white/30 shadow p-4 text-gray-900"
+            className="rounded-lg bg-white/40 backdrop-blur-xl border border-white/30 shadow p-4 text-gray-900"
           >
             <div className="flex justify-between items-center mb-2">
               <div className="font-medium">Room {r.room_number}</div>
@@ -208,13 +208,13 @@ export default function AdminRoomsPage() {
             <div className="flex gap-3 mt-3">
               <button
                 onClick={() => openEditModal(r)}
-                className="flex-1 py-2 rounded-xl bg-blue-500/20 text-blue-700"
+                className="flex-1 py-2 rounded-lg bg-blue-500/20 text-blue-700"
               >
                 Edit
               </button>
               <button
                 onClick={() => deleteRoom(r.room_id)}
-                className="flex-1 py-2 rounded-xl bg-red-500/20 text-red-700"
+                className="flex-1 py-2 rounded-lg bg-red-500/20 text-red-700"
               >
                 Delete
               </button>

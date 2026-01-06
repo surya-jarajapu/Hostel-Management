@@ -101,40 +101,33 @@ export default function AdminUsersPage() {
   // FETCH USERS
   // =========================
 
-  const fetchUsers = useCallback(
+  const fetchUsers = useCallback(async () => {
     async (pageIndex = 0) => {
-      if (!token) return;
-
       try {
         setLoading(true);
+        const res = await api.post("/user/search", {
+          paging: "No",
+          search: search.trim(),
+          page_index: pageIndex,
+          page_count: 10,
+          date_format_id: "1111-1111-1111-1111",
+          time_zone_id: "2222-2222-2222-2222",
+        });
 
-        const res = await api.post(
-          "/user/search",
-          {
-            paging: "No",
-            search: search.trim(),
-            page_index: pageIndex,
-            page_count: 10,
-            date_format_id: "1111-1111-1111-1111",
-            time_zone_id: "2222-2222-2222-2222",
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setUsers(res.data.status ? res.data.data : []);
-      } catch (error) {
-        console.error("Fetch users failed", error);
+        setUsers(Array.isArray(res.data.data) ? res.data.data : []);
+      } catch (err) {
+        console.error("Fetch users error:", err);
+        toast.error("Failed to load users");
         setUsers([]);
       } finally {
         setLoading(false);
       }
-    },
-    [token, search]
-  );
+    };
+  }, [token, search]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   // =========================
   // FETCH AVAILABLE ROOMS
@@ -155,16 +148,12 @@ export default function AdminUsersPage() {
           body: JSON.stringify({
             paging: "No",
             search: "",
-
-            // 🔴 REQUIRED BY BACKEND (YOU MISSED THIS)
             date_format_id: "1111-1111-1111-1111",
             time_zone_id: "2222-2222-2222-2222",
           }),
         }
       );
-
       const json = await res.json();
-
       if (json?.status === false) {
         setRooms([]);
         return;

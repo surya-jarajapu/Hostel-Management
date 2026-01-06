@@ -35,7 +35,6 @@ export default function AdminRoomsPage() {
   const fetchRooms = useCallback(async () => {
     try {
       setLoading(true);
-
       const res = await api.post("/room/search", {
         paging: "No",
         search: "",

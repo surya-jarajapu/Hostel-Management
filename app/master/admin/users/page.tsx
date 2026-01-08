@@ -101,33 +101,35 @@ export default function AdminUsersPage() {
   // FETCH USERS
   // =========================
 
-  const fetchUsers = useCallback(async () => {
-    async (pageIndex = 0) => {
-      try {
-        setLoading(true);
-        const res = await api.post("/user/search", {
-          paging: "No",
-          search: search.trim(),
-          page_index: pageIndex,
-          page_count: 10,
-          date_format_id: "1111-1111-1111-1111",
-          time_zone_id: "2222-2222-2222-2222",
-        });
+const fetchUsers = useCallback(
+  async (pageIndex = 0) => {
+    try {
+      setLoading(true);
 
-        setUsers(Array.isArray(res.data.data) ? res.data.data : []);
-      } catch (err) {
-        console.error("Fetch users error:", err);
-        toast.error("Failed to load users");
-        setUsers([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-  }, [token, search]);
+      const res = await api.post("/user/search", {
+        paging: "No",
+        search: search.trim(),
+        page_index: pageIndex,
+        page_count: 10,
+        date_format_id: "1111-1111-1111-1111",
+        time_zone_id: "2222-2222-2222-2222",
+      });
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+      setUsers(Array.isArray(res.data.data) ? res.data.data : []);
+    } catch (err) {
+      console.error("Fetch users error:", err);
+      toast.error("Failed to load users");
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  },
+  [search] // token not needed if api already has interceptor
+);
+useEffect(() => {
+  fetchUsers();
+}, [fetchUsers]);
+
 
   // =========================
   // FETCH AVAILABLE ROOMS
